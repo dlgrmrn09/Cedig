@@ -1,0 +1,6 @@
+{
+  "name": "CEDIG - Family Tree",
+  "description": "Монгол Ургийн Мод ба Гэр Бүлийн Түүхийн Платформ - CEDIG Family Tree Platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+@theme {
+  --color-vellum: #F5F0E8;
+  --color-ink: #1A1A2E;
+  --color-pine: #2B4C3B;
+  --color-cinnabar: #8B3A2A;
+  --color-bronze: #C4956A;
+
+  --font-inter: var(--font-inter);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono), 'JetBrains Mono', monospace;
+}
+
+/* Typography System */
+.display-xl {
+  @apply font-inter text-6xl font-bold tracking-[-0.02em];
+}
+.display-l {
+  @apply font-inter text-5xl font-bold tracking-[-0.015em];
+}
+.display-m {
+  @apply font-inter text-4xl font-bold tracking-[-0.01em];
+}
+.h1 {
+  @apply font-inter text-3xl font-bold tracking-[-0.01em];
+}
+.h2 {
+  @apply font-inter text-2xl font-semibold tracking-[-0.01em];
+}
+.h3 {
+  @apply font-inter text-xl font-semibold tracking-[-0.005em];
+}
+.h4 {
+  @apply font-inter text-lg font-semibold tracking-[0];
+}
+.h5 {
+  @apply font-inter text-base font-medium tracking-[0];
+}
+.body-lg {
+  @apply font-inter text-lg font-normal tracking-[0];
+}
+.body-md {
+  @apply font-inter text-base font-normal tracking-[0];
+}
+.body-sm {
+  @apply font-inter text-sm font-normal tracking-[0];
+}
+.caption {
+  @apply font-inter text-xs font-normal tracking-[0];
+}
+.badge {
+  @apply font-inter text-sm font-medium tracking-[0];
+}
+.label {
+  @apply font-inter text-xs font-medium tracking-[0];
+}
+.table-text {
+  @apply font-inter text-sm font-normal tracking-[0];
+}
+.button-text {
+  @apply font-inter text-sm font-semibold tracking-[0];
+}
+
+/* Font utility classes */
+.font-display {
+  font-family: var(--font-display);
+}
+.font-sans {
+  font-family: var(--font-sans);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(26, 26, 46, 0.05);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(196, 149, 106, 0.35);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 149, 106, 0.6);
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  @apply backdrop-blur-xl bg-white/15 dark:bg-ink/25;
+}
+
+.glass-border {
+  @apply border border-white/20 dark:border-ink/10;
+}
+
+.glass-hover {
+  @apply hover:shadow-xl hover:shadow-ink/30 transition-shadow duration-300;
+}
+
+/* Animation Utilities */
+.animate-float-slow {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s ease-in-out infinite;
+}
+
+/* Focus Ring Utilities */
+.focus-ring-ink {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2;
+}
+
+.focus-ring-bronze {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bronze focus-visible:ring-offset-2;
+}
+
+/* Transition Utilities */
+.transition-all-smooth {
+  @apply transition-all duration-300 ease-[0.16,1,0.3,1];
+}
+
+.ulzii-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L35 5L30 10L25 5L30 0zM55 25L60 30L55 35L50 30L55 25zM30 50L35 55L30 60L25 55L30 50zM5 25L10 30L5 35L0 30L5 25z' fill='%23C4956A' fill-opacity='0.08'/%3E%3C/svg%3E");
+}
+
+body.sidebar-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  body.sidebar-open {
+    overflow: auto;
+    position: static;
+    width: auto;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes stamp {
+  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  40% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+  70% { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-stamp {
+  animation: stamp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

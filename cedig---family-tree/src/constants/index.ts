@@ -1,0 +1,9 @@
+export const CLANS = ['Sartuul', 'Borgijin'] as const;
+export const ALL_CLANS_OPTION = 'All Clans';
+export const YEAR_RANGE_MIN = 1900;
+export const YEAR_RANGE_MAX = 2026;
+export const CURRENT_YEAR = 2026;
+export const MOBILE_BREAKPOINT = 768;
+export const TOAST_DURATION_MS = 4500;
+export const DEBOUNCE_DELAY_MS = 300;
+export const SEAL_ANIMATION_DURATION_MS = 900;
