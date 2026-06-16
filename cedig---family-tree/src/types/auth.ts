@@ -1,16 +1,20 @@
-export type UserRole = 'Owner' | 'Editor' | 'Viewer';
+export type UserRole = 'Owner' | 'Admin' | 'Editor' | 'Viewer';
 
 export interface User {
+  id: string;
   name: string;
   email: string;
+  username: string;
   role: UserRole;
   avatar?: string;
   code: string;
 }
 
 export interface MemberInvite {
-  email: string;
-  phone?: string;
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
   role: 'Editor' | 'Viewer';
   code: string;
   status: 'Pending' | 'Active';

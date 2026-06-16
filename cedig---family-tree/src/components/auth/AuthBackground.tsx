@@ -6,7 +6,7 @@ export default function AuthBackground() {
   return (
     <div className="fixed inset-0 -z-10" aria-hidden="true">
       <Image
-        src="/assets/background/tree-bg.png"
+        src="/assets/background/tree-bg.jpg"
         alt=""
         fill
         className="object-cover object-center"

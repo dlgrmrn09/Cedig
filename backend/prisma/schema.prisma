@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  firebaseUid    String?   @unique @map("firebase_uid") @db.VarChar(255)
+  email          String?   @unique @db.VarChar(255)
+  passwordHash   String?   @map("password_hash") @db.VarChar(255)
+  phone          String?   @db.VarChar(50)
+  countryCode    String?   @default("+976") @map("country_code") @db.VarChar(10)
+  username       String    @unique @db.VarChar(30)
+  firstName      String    @default("") @map("first_name") @db.VarChar(100)
+  lastName       String    @default("") @map("last_name") @db.VarChar(100)
+  displayName    String?   @map("display_name") @db.VarChar(255)
+  avatarUrl      String?   @map("avatar_url") @db.Text
+  role           String    @default("Owner") @db.VarChar(20)
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  phoneVerified  Boolean   @default(false) @map("phone_verified")
+  authMethod     String    @default("email") @map("auth_method") @db.VarChar(20)
+  isActive       Boolean   @default(true) @map("is_active")
+  lastLoginAt    DateTime? @map("last_login_at") @db.Timestamptz()
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  ownedTrees     FamilyTree[]     @relation("TreeOwner")
+  treeMemberships TreeMember[]    @relation("MemberUser")
+  notifications  Notification[]
+  passwordResetTokens PasswordResetToken[]
+  createdPeople  Person[]         @relation("PersonCreator")
+  uploadedMedia  Media[]          @relation("MediaUploader")
+  createdInvites Invite[]         @relation("InviteCreator")
+  receivedInvites Invite[]        @relation("InvitedUser")
+  joinRequests   JoinRequest[]    @relation("JoinRequester")
+  reviewedRequests JoinRequest[]  @relation("JoinReviewer")
+  activityLogs   ActivityLog[]
+  subscriptions  Subscription[]
+
+  @@map("users")
+}
+
+model FamilyTree {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name            String   @db.VarChar(255)
+  code            String   @unique @db.VarChar(50)
+  ownerId         String   @unique @map("owner_id") @db.Uuid
+  description     String?  @db.Text
+  clanName        String?  @map("clan_name") @db.VarChar(100)
+  privacySetting  String   @default("invite_only") @map("privacy_setting") @db.VarChar(20)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  owner           User          @relation("TreeOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members         TreeMember[]
+  people          Person[]
+  media           Media[]
+  activityLogs    ActivityLog[]
+  invites         Invite[]
+  joinRequests    JoinRequest[]
+
+  @@index([code])
+  @@index([ownerId])
+  @@map("family_trees")
+}
+
+model TreeMember {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  treeId     String   @map("tree_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  role       String   @default("Viewer") @db.VarChar(20)
+  inviteCode String?  @map("invite_code") @db.VarChar(50)
+  status     String   @default("Active") @db.VarChar(20)
+  joinedAt   DateTime @default(now()) @map("joined_at") @db.Timestamptz()
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  tree       FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  user       User       @relation("MemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([treeId, userId])
+  @@index([treeId])
+  @@index([userId])
+  @@map("tree_members")
+}
+
+model Person {
+  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  treeId              String    @map("tree_id") @db.Uuid
+  firstName           String    @map("first_name") @db.VarChar(100)
+  lastName            String    @map("last_name") @db.VarChar(100)
+  surname             String?   @db.VarChar(100)
+  clanName            String    @default("") @map("clan_name") @db.VarChar(100)
+  birthPlace          String?   @default("") @map("birth_place") @db.VarChar(255)
+  residence           String?   @default("") @map("residence") @db.VarChar(255)
+  citizenship         String?   @default("") @map("citizenship") @db.VarChar(100)
+  phone               String?   @default("") @map("phone") @db.VarChar(50)
+  email               String?   @default("") @map("email") @db.VarChar(255)
+  title               String?   @default("") @map("title") @db.VarChar(255)
+  employment          String?   @default("") @map("employment") @db.VarChar(255)
+  biography           String?   @db.Text
+  zodiacSign          String?   @map("zodiac_sign") @db.VarChar(50)
+  birthYear           Int?      @map("birth_year")
+  birthDate           String?   @map("birth_date") @db.VarChar(20)
+  deathDate           String?   @map("death_date") @db.VarChar(20)
+  gender              String    @db.VarChar(10)
+  occupation          String?   @db.VarChar(255)
+  education           String?   @db.VarChar(255)
+  awards              String[]  @default([]) @db.Text
+  avatarUrl           String?   @map("avatar_url") @db.Text
+  notes               String?   @db.Text
+  customFields        Json?     @map("custom_fields") @db.JsonB
+  relationshipLabel   String    @default("RELATIVE") @map("relationship_label") @db.VarChar(30)
+  verified            Boolean   @default(false)
+  pendingOralHistory  Boolean   @default(false) @map("pending_oral_history")
+  fatherId            String?   @map("father_id") @db.Uuid
+  motherId            String?   @map("mother_id") @db.Uuid
+  spouseId            String?   @map("spouse_id") @db.Uuid
+  createdBy           String?   @map("created_by") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tree                FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  creator             User?      @relation("PersonCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  father              Person?    @relation("PersonFather", fields: [fatherId], references: [id], onDelete: SetNull)
+  mother              Person?    @relation("PersonMother", fields: [motherId], references: [id], onDelete: SetNull)
+  spouse              Person?    @relation("PersonSpouse", fields: [spouseId], references: [id], onDelete: SetNull)
+  childrenFromFather  Person[]   @relation("PersonFather")
+  childrenFromMother  Person[]   @relation("PersonMother")
+  spousesOf           Person[]   @relation("PersonSpouse")
+  media               Media[]
+  activityLogs        ActivityLog[]
+
+  @@index([treeId])
+  @@index([fatherId])
+  @@index([motherId])
+  @@index([spouseId])
+  @@index([clanName])
+  @@index([lastName, firstName])
+  @@index([birthYear])
+  @@map("people")
+}
+
+model Media {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  personId    String   @map("person_id") @db.Uuid
+  treeId      String   @map("tree_id") @db.Uuid
+  title       String   @db.VarChar(255)
+  description String   @default("") @db.Text
+  type        String   @db.VarChar(20)
+  url         String   @db.Text
+  fileKey     String?  @map("file_key") @db.VarChar(500)
+  fileSize    Int?     @map("file_size")
+  mimeType    String?  @map("mime_type") @db.VarChar(100)
+  version     Int      @default(1)
+  uploadedBy  String?  @map("uploaded_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  person      Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  tree        FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  uploader    User?     @relation("MediaUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+
+  @@index([personId])
+  @@index([treeId])
+  @@index([type])
+  @@map("media")
+}
+
+model Notification {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  type          String   @default("info") @db.VarChar(20)
+  title         String   @db.VarChar(255)
+  message       String   @db.Text
+  isRead        Boolean  @default(false) @map("is_read")
+  referenceType String?  @map("reference_type") @db.VarChar(50)
+  referenceId   String?  @map("reference_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  treeId      String   @map("tree_id") @db.Uuid
+  type        String   @db.VarChar(30)
+  description String   @db.Text
+  personId    String?  @map("person_id") @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  userName    String   @default("System") @map("user_name") @db.VarChar(255)
+  metadata    Json     @default("{}") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  tree        FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  person      Person?    @relation(fields: [personId], references: [id], onDelete: SetNull)
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([treeId])
+  @@index([personId])
+  @@index([type])
+  @@index([createdAt(sort: Desc)])
+  @@map("activity_logs")
+}
+
+model Invite {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  treeId    String   @map("tree_id") @db.Uuid
+  email     String?  @db.VarChar(255)
+  phone     String?  @db.VarChar(50)
+  userId    String?  @map("user_id") @db.Uuid
+  role      String   @default("Editor") @db.VarChar(20)
+  code      String   @unique @db.VarChar(50)
+  status    String   @default("Pending") @db.VarChar(20)
+  invitedBy String?  @map("invited_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tree      FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  inviter   User?      @relation("InviteCreator", fields: [invitedBy], references: [id], onDelete: SetNull)
+  user      User?      @relation("InvitedUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([treeId, userId])
+  @@index([treeId])
+  @@index([code])
+  @@index([email])
+  @@index([userId])
+  @@map("invites")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  email     String   @db.VarChar(255)
+  token     String   @db.VarChar(255)
+  otp       String?  @db.VarChar(10)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz()
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([email])
+  @@map("password_reset_tokens")
+}
+
+model Subscription {
+  id                 String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  plan               String    @default("free") @db.VarChar(50)
+  status             String    @default("active") @db.VarChar(20)
+  amount             Decimal?  @default(0) @db.Decimal(10, 2)
+  currency           String?   @default("MNT") @db.VarChar(10)
+  billingPeriod      String?   @default("monthly") @map("billing_period") @db.VarChar(20)
+  currentPeriodStart DateTime? @map("current_period_start") @db.Timestamptz()
+  currentPeriodEnd   DateTime? @map("current_period_end") @db.Timestamptz()
+  canceledAt         DateTime? @map("canceled_at") @db.Timestamptz()
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model JoinRequest {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  treeId     String    @map("tree_id") @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  code       String    @db.VarChar(50)
+  status     String    @default("Pending") @db.VarChar(20)
+  message    String?   @db.VarChar(500)
+  reviewedBy String?   @map("reviewed_by") @db.Uuid
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz()
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tree       FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  user       User       @relation("JoinRequester", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer   User?      @relation("JoinReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@unique([treeId, userId, status])
+  @@index([treeId])
+  @@index([userId])
+  @@index([status])
+  @@map("join_requests")
+}

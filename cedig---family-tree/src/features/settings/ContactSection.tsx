@@ -100,7 +100,7 @@ export default function ContactSection({
       <div className="pb-4 border-b border-stone-200/50 flex justify-between items-center">
         <div>
           <h3 className="font-display font-bold text-lg text-ink">
-            Холбоо Барих Мэдээлэл
+            Contact Information
           </h3>
           <p className="text-xs text-stone-500 mt-1">
             И-мэйл болон утасны дугаараа шинэчлэх

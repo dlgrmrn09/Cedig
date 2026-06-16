@@ -34,6 +34,7 @@ interface ShastirBookProps {
     role: "father" | "mother" | "spouse" | "child",
   ) => void;
   deleteMediaItem: (id: string) => void;
+  canDelete: boolean;
   addNotification: (
     type: "info" | "success" | "warn",
     title: string,
@@ -44,6 +45,7 @@ interface ShastirBookProps {
   setLightboxImage: (
     image: { url: string; label: string; year: string } | null,
   ) => void;
+  setActivePersonId: (id: string | null) => void;
   age: number;
   animalYear: string;
   portraitUrl: string;
@@ -56,10 +58,12 @@ export default function ShastirBook({
   relationships,
   setAddingRelation,
   deleteMediaItem,
+  canDelete,
   addNotification,
   setActiveUploadType,
   setDocPreview,
   setLightboxImage,
+  setActivePersonId,
   age,
   animalYear,
   portraitUrl,
@@ -262,6 +266,8 @@ export default function ShastirBook({
 
     if (action === "go-to-page") {
       goToPage(parseInt(value || "0", 10));
+    } else if (action === "open-person") {
+      if (value) setActivePersonId(value);
     } else if (action === "add-relation-father") {
       setAddingRelation(activePerson.id, "father");
     } else if (action === "add-relation-mother") {
@@ -273,6 +279,7 @@ export default function ShastirBook({
       if (pic) setLightboxImage(pic);
     } else if (action === "delete-image") {
       e.stopPropagation();
+      if (!canDelete) return;
       deleteMediaItem(value || "");
       addNotification("info", "Зургийн сан", "Зургийг амжилттай устгалаа.");
     } else if (action === "upload-photo") {
@@ -480,7 +487,6 @@ export default function ShastirBook({
           animalYear={animalYear}
           age={age}
           relationships={relationships}
-          onSetAddingRelation={(id, role) => setAddingRelation(id, role)}
         />
 
         <NarrativePage activePerson={activePerson} />
@@ -493,6 +499,7 @@ export default function ShastirBook({
             deleteMediaItem(id);
             addNotification("info", "Зургийн сан", "Зургийг амжилттай устгалаа.");
           }}
+          canDelete={canDelete}
         />
 
         <DocumentsPage

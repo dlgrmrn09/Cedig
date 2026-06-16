@@ -24,19 +24,15 @@ export default function TooltipPortal({ person, rect }: TooltipPortalProps) {
       className="w-48 bg-pine text-vellum dark:bg-[#0B1A2A] rounded-xl p-3.5 shadow-2xl border border-bronze/30 text-left text-xs space-y-2 pointer-events-none transition-all duration-150"
     >
       <p className="font-bold border-b border-vellum/15 pb-1">
-        {person.firstName} {person.lastName}
+        {person.lastName} {person.firstName}
       </p>
       <div>
-        <span className="text-gray-400 block text-[9px]">
-          Төрсөн газар:
-        </span>
+        <span className="text-gray-400 block text-[9px]">Төрсөн газар:</span>
         <span>{person.birthPlace}</span>
       </div>
       {person.deathDate && (
         <div>
-          <span className="text-gray-400 block text-[9px]">
-            Төрсөн огноо:
-          </span>
+          <span className="text-gray-400 block text-[9px]">Төрсөн огноо:</span>
           <span className="truncate block">
             {person.birthDate?.split("-")[0]} -{" "}
             {person.deathDate?.split("-")[0]}

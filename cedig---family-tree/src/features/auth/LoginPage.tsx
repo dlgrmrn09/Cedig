@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Trees, Archive, Image, Users } from "lucide-react";
@@ -9,26 +10,55 @@ import { useAppStore } from "@/src/store";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAppStore();
+  const { loginWithEmailPassword, loginWithGoogle, loginWithFacebook, addNotification } = useAppStore();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleEmailLogin = (data: { email: string; password: string }) => {
-    login(data.email);
-    router.push("/onboarding");
+  const handleEmailLogin = async (data: { email: string; password: string }) => {
+    setError(null);
+    try {
+      await loginWithEmailPassword(data.email, data.password);
+      router.replace("/family-tree");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Нэвтрэхэд алдаа гарлаа";
+      setError(msg);
+      addNotification("warn", "Нэвтрэх алдаа", msg);
+    }
   };
 
-  const handlePhoneLogin = (data: { phone: string; countryCode: string; password: string }) => {
-    login(`${data.countryCode}${data.phone}`);
-    router.push("/onboarding");
+  const handlePhoneLogin = async (data: { phone: string; countryCode: string; password: string }) => {
+    setError(null);
+    try {
+      await loginWithEmailPassword(`${data.countryCode}${data.phone}`, data.password);
+      router.replace("/family-tree");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Нэвтрэхэд алдаа гарлаа";
+      setError(msg);
+      addNotification("warn", "Нэвтрэх алдаа", msg);
+    }
   };
 
-  const handleGoogleLogin = () => {
-    login("google-user@cedig.mn", "Google Хэрэглэгч");
-    router.push("/onboarding");
+  const handleGoogleLogin = async () => {
+    setError(null);
+    try {
+      await loginWithGoogle();
+      router.replace("/family-tree");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Google нэвтрэлт амжилтгүй";
+      setError(msg);
+      addNotification("warn", "Google нэвтрэлт", msg);
+    }
   };
 
-  const handleFacebookLogin = () => {
-    login("fb-user@cedig.mn", "Facebook Хэрэглэгч");
-    router.push("/onboarding");
+  const handleFacebookLogin = async () => {
+    setError(null);
+    try {
+      await loginWithFacebook();
+      router.replace("/family-tree");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Facebook нэвтрэлт амжилтгүй";
+      setError(msg);
+      addNotification("warn", "Facebook нэвтрэлт", msg);
+    }
   };
 
   return (
@@ -49,6 +79,12 @@ export default function LoginPage() {
               Ургийн модоо үүсгэж, гэр бүлийн түүхээ хойч үедээ өвлүүлээрэй.
             </p>
           </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
 
           <div className="space-y-3">
             {[

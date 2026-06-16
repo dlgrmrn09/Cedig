@@ -1,10 +1,8 @@
 import type { StateCreator } from "zustand";
 import type { AppNotification, NotificationType } from "@/src/types/notification";
+import { markAsRead, markAllAsRead, clearNotifications } from "@/src/services/notificationService";
 
-const initialNotifications: AppNotification[] = [
-  { id: "n1", type: "success", title: "Tree Setup Completed", message: "CEDIG has successfully initialized the Sartuul Family Tree.", isRead: false, time: "2 hours ago" },
-  { id: "n2", type: "info", title: "Curation Tip", message: "Add birth certificates for descendants to automatically earn the \"Verified\" badge.", isRead: false, time: "4 hours ago" },
-];
+const initialNotifications: AppNotification[] = [];
 
 export interface NotificationSlice {
   notifications: AppNotification[];
@@ -12,6 +10,10 @@ export interface NotificationSlice {
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
   clearNotifications: () => void;
+
+  markNotificationAsReadAsync: (id: string) => Promise<void>;
+  markAllNotificationsAsReadAsync: () => Promise<void>;
+  clearNotificationsAsync: () => Promise<void>;
 }
 
 export const createNotificationSlice: StateCreator<NotificationSlice, [], [], NotificationSlice> = (set) => ({
@@ -38,4 +40,37 @@ export const createNotificationSlice: StateCreator<NotificationSlice, [], [], No
     })),
 
   clearNotifications: () => set({ notifications: [] }),
+
+  markNotificationAsReadAsync: async (id) => {
+    try {
+      await markAsRead(id);
+      set((state) => ({
+        notifications: state.notifications.map((n) =>
+          n.id === id ? { ...n, isRead: true } : n,
+        ),
+      }));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  },
+
+  markAllNotificationsAsReadAsync: async () => {
+    try {
+      await markAllAsRead();
+      set((state) => ({
+        notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
+      }));
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  },
+
+  clearNotificationsAsync: async () => {
+    try {
+      await clearNotifications();
+      set({ notifications: [] });
+    } catch (error) {
+      console.error('Failed to clear notifications:', error);
+    }
+  },
 });

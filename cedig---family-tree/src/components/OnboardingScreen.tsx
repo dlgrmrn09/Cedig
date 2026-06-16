@@ -11,11 +11,27 @@ import {
   CheckCircle2,
   AlertCircle,
   FolderLock,
+  TreePine,
 } from "lucide-react";
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { createTree, joinTree, logout, user } = useAppStore();
+  const {
+    joinTree,
+    createTreeAsync,
+    joinTreeAsync,
+    logout,
+    user,
+    trees,
+  } = useAppStore();
+
+  const hasTree = trees.filter((t: any) => t.role === 'Owner').length > 0;
+
+  const handleLogout = () => {
+    logout();
+    console.log("[AUTH] Redirecting to login");
+    router.push("/login");
+  };
   const [mode, setMode] = useState<"select" | "create" | "join">("select");
   const [treeName, setTreeName] = useState("");
   const [treeDescription, setTreeDescription] = useState("");
@@ -24,26 +40,42 @@ export default function OnboardingScreen() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!treeName.trim()) {
       setErrorMsg("Ургийн модны нэрийг оруулна уу.");
       return;
     }
+
+    if (hasTree) {
+      setErrorMsg("Та аль хэдийн ургийн мод үүсгэсэн байна.");
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
 
-    setTimeout(() => {
-      setLoading(false);
-      createTree(treeName);
+    try {
+      await createTreeAsync(treeName);
       setSuccessMsg("Ургийн мод амжилттай үүсгэгдлээ!");
       setTimeout(() => {
         router.push("/family-tree");
       }, 1000);
-    }, 1200);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Үүсгэхэд алдаа гарлаа.";
+      if (msg.includes("already owns") || msg.includes("409")) {
+        setErrorMsg(
+          "Та аль хэдийн нэг ургийн мод үүсгэсэн байна. Хэрэглэгч бүр зөвхөн нэг мод үүсгэх боломжтой.",
+        );
+      } else {
+        setErrorMsg("Үүсгэхэд алдаа гарлаа. Дахин оролдоно уу.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (joinCode.length < 5) {
       setErrorMsg("Зөв урилгын код оруулна уу (жишээ нь: SARTUUL-785)");
@@ -52,24 +84,19 @@ export default function OnboardingScreen() {
     setLoading(true);
     setErrorMsg(null);
 
-    setTimeout(() => {
+    try {
+      await joinTreeAsync(joinCode.toUpperCase());
+      setSuccessMsg("Хүсэлт илгээгдлээ. Ургийн модны эзэмшигч таны хүсэлтийг баталгаажуулсны дараа та нэвтрэх боломжтой.");
+      setTimeout(() => {
+        router.push("/family-tree");
+      }, 2000);
+    } catch {
+      setErrorMsg(
+        "Урилгын код олдсонгүй эсвэл хүчингүй байна. Дахин шалгана уу.",
+      );
+    } finally {
       setLoading(false);
-      if (
-        joinCode.toUpperCase() === "SARTUUL-785" ||
-        joinCode.toUpperCase() === "VIEW-998" ||
-        joinCode.toUpperCase().startsWith("CEDIG")
-      ) {
-        joinTree(joinCode.toUpperCase(), "Sartuul Ogiin Bichig Tree");
-        setSuccessMsg("Урилгын холбоос амжилттай баталгаажлаа!");
-        setTimeout(() => {
-          router.push("/family-tree");
-        }, 800);
-      } else {
-        setErrorMsg(
-          "Урилгын код олдсонгүй эсвэл хүчингүй байна. Дахин шалгана уу.",
-        );
-      }
-    }, 1200);
+    }
   };
 
   return (
@@ -87,7 +114,7 @@ export default function OnboardingScreen() {
             <b>{user?.email}</b>
           </span>
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="text-xs font-semibold hover:text-bronze transition-colors bg-white px-3 py-1.5 rounded-lg border border-ink/10 cursor-pointer "
           >
             Гарах
@@ -117,33 +144,55 @@ export default function OnboardingScreen() {
             <div className="space-y-8">
               <div className="text-center max-w-md mx-auto">
                 <h1 className="text-3xl font-display font-bold text-ink">
-                  Ургийн бичгийн эхлэл
+                  {hasTree ? "Таны ургийн бичиг" : "Ургийн бичгийн эхлэл"}
                 </h1>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6 pt-4">
-                {/* Option: Create */}
-                <button
-                  id="create-tree-option"
-                  onClick={() => setMode("create")}
-                  className="p-8 rounded-2xl border-2 border-ink/10 hover:border-bronze hover:bg-vellum/30 text-left transition-all flex flex-col justify-between group h-64"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-bronze/10 flex items-center justify-center text-bronze group-hover:scale-105 transition-transform">
-                    <PlusCircle className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-ink mb-2 group-hover:text-bronze transition-colors">
-                      Шинээр ургийн мод үүсгэх
-                    </h3>
-                    <p className="text-xs text-ink/60 leading-relaxed">
-                      Гэр бүлийнхаа дижитал санг үүсгэж, эх сурвалж, зураг, түүх
-                      уламжлалаа аюулгүй хадгалах.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs font-bold text-bronze pt-2">
-                    Эхлэх <ArrowRight className="w-4 h-4" />
-                  </div>
-                </button>
+                {hasTree ? (
+                  <button
+                    onClick={() => router.push("/family-tree")}
+                    className="p-8 rounded-2xl border-2 border-bronze bg-bronze/5 hover:bg-bronze/10 text-left transition-all flex flex-col justify-between group h-64"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-bronze/20 flex items-center justify-center text-bronze group-hover:scale-105 transition-transform">
+                      <TreePine className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-ink mb-2 group-hover:text-bronze transition-colors">
+                        Ургийн мод руу очих
+                      </h3>
+                      <p className="text-xs text-ink/60 leading-relaxed">
+                        Та аль хэдийн ургийн мод үүсгэсэн байна. Үргэлжлүүлэн
+                        ажиллах.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs font-bold text-bronze pt-2">
+                      Нээх <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    id="create-tree-option"
+                    onClick={() => setMode("create")}
+                    className="p-8 rounded-2xl border-2 border-ink/10 hover:border-bronze hover:bg-vellum/30 text-left transition-all flex flex-col justify-between group h-64"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-bronze/10 flex items-center justify-center text-bronze group-hover:scale-105 transition-transform">
+                      <PlusCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-ink mb-2 group-hover:text-bronze transition-colors">
+                        Шинээр ургийн мод үүсгэх
+                      </h3>
+                      <p className="text-xs text-ink/60 leading-relaxed">
+                        Гэр бүлийнхаа дижитал санг үүсгэж, эх сурвалж, зураг,
+                        түүх уламжлалаа аюулгүй хадгалах.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs font-bold text-bronze pt-2">
+                      Эхлэх <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </button>
+                )}
 
                 {/* Option: Join */}
                 <button
@@ -177,7 +226,7 @@ export default function OnboardingScreen() {
                 </div>
                 <button
                   onClick={() => {
-                    joinTree("SARTUUL-2026", "Sartuul Ogiin Bichig");
+                    joinTree("DEMO-0000", "Demo Tree");
                     router.push("/family-tree");
                   }}
                   className="bg-pine text-white px-3 py-1.5 rounded-lg hover:bg-opacity-90 font-bold ml-4 shrink-0 transition"
@@ -189,7 +238,7 @@ export default function OnboardingScreen() {
           )}
 
           {/* STATE: CREATE FORM */}
-          {mode === "create" && (
+          {mode === "create" && !hasTree && (
             <form onSubmit={handleCreate} className="space-y-6">
               <div className="space-y-2">
                 <button
@@ -202,20 +251,16 @@ export default function OnboardingScreen() {
                 <h2 className="text-2xl font-display font-bold text-ink">
                   Шинэ ургийн мод үүсгэх
                 </h2>
-                <p className="text-xs text-ink/60">
-                  Бид таны модонд зориулж хамгаалалттай тусгай шифрлэгдсэн код
-                  үүсгэх болно.
-                </p>
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold tracking-wider uppercase text-ink/60">
-                  Ургийн модны нэр
+                  Ургийн Овог
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Жишээ: Сартуул овгийн Ургийн Бичиг"
+                  placeholder="Name"
                   value={treeName}
                   onChange={(e) => setTreeName(e.target.value)}
                   className="w-full bg-stone-50 border-2 border-ink/10 rounded-xl px-4 py-3 placeholder-stone-400 focus:outline-none focus:border-bronze transition-all text-base"
@@ -224,10 +269,10 @@ export default function OnboardingScreen() {
 
               <div className="space-y-2">
                 <label className="text-xs font-bold tracking-wider uppercase text-ink/60">
-                  Товч тайлбар / Уриа үг
+                  Товч тайлбар
                 </label>
                 <textarea
-                  placeholder="Манай овгийн уриа болон аялалын түүх..."
+                  placeholder="Description (optional) "
                   value={treeDescription}
                   onChange={(e) => setTreeDescription(e.target.value)}
                   className="w-full h-24 bg-stone-50 border-2 border-ink/10 rounded-xl p-4 placeholder-stone-400 focus:outline-none focus:border-bronze transition-all text-base resize-none"
@@ -251,9 +296,7 @@ export default function OnboardingScreen() {
                 disabled={loading}
                 className="w-full bg-pine text-white py-4 rounded-xl font-bold hover:opacity-95 transition-all shadow-lg flex items-center justify-center gap-2 mt-4"
               >
-                {loading
-                  ? "Үүсгэж байна..."
-                  : "Ургийн санг баталгаажуулж эхлэх"}{" "}
+                {loading ? "Үүсгэж байна..." : "Ургийн мод үүсгэх"}{" "}
                 <ArrowRight className="w-5 h-5 text-bronze" />
               </button>
             </form>
@@ -271,12 +314,8 @@ export default function OnboardingScreen() {
                   ← Буцах
                 </button>
                 <h2 className="text-2xl font-display font-bold text-ink">
-                  Ургийн модонд урилгаар нэгдэх
+                  Код оруулах
                 </h2>
-                <p className="text-xs text-ink/60">
-                  Таны гэр бүлийн гишүүний системээс үүсгэж өгсөн кодыг
-                  оруулаарай.
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -286,21 +325,11 @@ export default function OnboardingScreen() {
                 <input
                   type="text"
                   required
-                  placeholder="Жишээ: SARTUUL-785 эсвэл VIEW-998"
+                  placeholder="-   -   -   -   -   -"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
                   className="w-full bg-stone-50 border-2 border-ink/10 rounded-xl px-4 py-4 text-center text-lg font-bold placeholder-stone-400 focus:outline-none focus:border-bronze transition-all uppercase tracking-wider"
                 />
-              </div>
-
-              <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-ink/70 space-y-1">
-                <p className="font-bold text-ink">Туршилтын мэдээлэл:</p>
-                <p>
-                  • Засах эрхтэй нэгдэх: <b>SARTUUL-785</b>
-                </p>
-                <p>
-                  • Зөвхөн харах эрхтэй нэгдэх: <b>VIEW-998</b>
-                </p>
               </div>
 
               <button

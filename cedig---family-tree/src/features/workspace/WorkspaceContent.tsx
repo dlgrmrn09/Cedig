@@ -247,7 +247,7 @@ export function WorkspaceContent() {
                     return (
                       <div key={ph.id} className="bg-white rounded-2xl overflow-hidden border border-stone-200 group relative shadow-md">
                         <div className="relative h-48 w-full bg-[#ebdcb9]/40 border-b">
-                          <Image src={ph.url} alt={ph.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" referrerPolicy="no-referrer" />
+                          <Image src={ph.url} alt={ph.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" referrerPolicy="no-referrer" unoptimized />
                         </div>
                         <div className="p-4 space-y-2">
                           <p className="font-bold text-sm text-ink">{ph.title}</p>

@@ -23,5 +23,14 @@ export function personService() {
 
     setAddingRelation: (id: string | null, type: AddingRelationType) =>
       store.setAddingRelation(id, type),
+
+    addPersonAsync: (treeId: string, data: Omit<Person, "id" | "verified" | "pendingOralHistory">) =>
+      store.addPersonAsync(treeId, data),
+
+    editPersonAsync: (treeId: string, id: string, updates: Partial<Person>) =>
+      store.editPersonAsync(treeId, id, updates),
+
+    deletePersonAsync: (treeId: string, id: string) =>
+      store.deletePersonAsync(treeId, id),
   };
 }

@@ -1,4 +1,4 @@
-export type ViewType = 'landing' | 'login' | 'register' | 'forgot-password' | 'otp-verification' | 'reset-password' | 'auth-success' | 'onboarding' | 'workspace';
+export type ViewType = 'landing' | 'login' | 'register' | 'forgot-password' | 'reset-password-sent' | 'otp-verification' | 'reset-password' | 'auth-success' | 'verify-email' | 'onboarding' | 'workspace';
 
 export type WorkspaceTab = 'tree' | 'biographies' | 'photos' | 'documents' | 'activity' | 'access' | 'settings' | 'admin' | 'pricing';
 

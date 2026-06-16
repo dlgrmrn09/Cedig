@@ -26,6 +26,7 @@ export default function PasswordChangeForm({
 }: PasswordChangeFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -108,9 +109,13 @@ export default function PasswordChangeForm({
 
   const onSubmit = async (data: PasswordChangeFormData) => {
     setIsSaving(true);
+    setError(null);
     try {
       await onChangePassword(data);
       setSuccess(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Нууц үг солиход алдаа гарлаа';
+      setError(msg);
     } finally {
       setIsSaving(false);
     }
@@ -143,6 +148,17 @@ export default function PasswordChangeForm({
         >
           <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
           <span>Нууц үг амжилттай солигдлоо.</span>
+        </motion.div>
+      )}
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-800 text-xs"
+        >
+          <CircleAlert className="w-4.5 h-4.5 text-red-600 shrink-0" />
+          <span>{error}</span>
         </motion.div>
       )}
 

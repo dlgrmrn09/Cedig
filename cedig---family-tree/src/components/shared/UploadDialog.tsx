@@ -1,6 +1,6 @@
 import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
 import { motion } from "motion/react";
-import { X, Upload, Image as ImageIcon, FileText } from "lucide-react";
+import { X, Upload, Image as ImageIcon, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/src/lib/cn";
 import Image from "next/image";
 
@@ -10,14 +10,16 @@ interface UploadDialogProps {
   open: boolean;
   onClose: () => void;
   type: UploadTargetType;
-  onUpload: (data: { title: string; description: string; url: string }) => void;
+  onUpload: (data: { title: string; description: string; url: string; file: File }) => void;
 }
 
 export function UploadDialog({ open, onClose, type, onUpload }: UploadDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedFileUrl, setSelectedFileUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
@@ -42,15 +44,24 @@ export function UploadDialog({ open, onClose, type, onUpload }: UploadDialogProp
   };
 
   const processFile = (file: File) => {
+    console.log("[UPLOAD] Selected file", { name: file.name, size: file.size, type: file.type });
+    setSelectedFile(file);
     setSelectedFileUrl(URL.createObjectURL(file));
   };
 
-  const handleSubmit = () => {
-    if (!title || !selectedFileUrl) return;
-    onUpload({ title, description, url: selectedFileUrl });
-    setTitle("");
-    setDescription("");
-    setSelectedFileUrl(null);
+  const handleSubmit = async () => {
+    if (!title || !selectedFile) return;
+    setUploading(true);
+    try {
+      console.log("[UPLOAD] Submitting upload", { title, description, fileName: selectedFile.name });
+      await onUpload({ title, description, url: "", file: selectedFile });
+      setTitle("");
+      setDescription("");
+      setSelectedFile(null);
+      setSelectedFileUrl(null);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const isPhoto = type === "photo";
@@ -113,6 +124,12 @@ export function UploadDialog({ open, onClose, type, onUpload }: UploadDialogProp
             )}
           </div>
 
+          {selectedFile && (
+            <p className="text-[10px] text-ink/50 truncate">
+              {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+            </p>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold uppercase tracking-wider text-ink/60">
               Title <span className="text-red-400">*</span>
@@ -145,10 +162,17 @@ export function UploadDialog({ open, onClose, type, onUpload }: UploadDialogProp
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!title || !selectedFileUrl}
-              className="flex-1 py-2.5 rounded-xl bg-[#3B291D] text-white text-xs font-bold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              disabled={!title || !selectedFile || uploading}
+              className="flex-1 py-2.5 rounded-xl bg-[#3B291D] text-white text-xs font-bold hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5"
             >
-              Upload
+              {uploading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                "Upload"
+              )}
             </button>
           </div>
         </div>

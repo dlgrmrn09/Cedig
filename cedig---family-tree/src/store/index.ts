@@ -8,7 +8,6 @@ import { createInviteSlice, type InviteSlice } from "./slices/inviteSlice";
 import { createFilterSlice, type FilterSlice } from "./slices/filterSlice";
 import type { Person } from "@/src/types/person";
 import type { MediaItem } from "@/src/types/media";
-import type { AppNotification } from "@/src/types/notification";
 import type { ActivityLog } from "@/src/types/activity";
 
 export type AppState = AuthSlice & PersonSlice & MediaSlice & NotificationSlice & ActivitySlice & InviteSlice & FilterSlice;
@@ -32,11 +31,10 @@ export const useAppStore = create<AppState>()((...a) => {
     ...invites,
     ...filters,
 
-    // Override addPerson to include activity + notification side effects
     addPerson: (personData: Omit<Person, "id" | "verified" | "pendingOralHistory">) => {
       person.addPerson(personData);
       const state = get();
-      const newPerson = state.people[0]; // most recently added
+      const newPerson = state.people[0];
       if (!newPerson) return;
       const desc = `Added Ancestor line: ${newPerson.firstName} ${newPerson.lastName} (${newPerson.birthYear})`;
       const newActivity: ActivityLog = {
@@ -44,24 +42,12 @@ export const useAppStore = create<AppState>()((...a) => {
         type: "add",
         description: desc,
         personId: newPerson.id,
-        userName: state.user?.name || "Guest User",
-        timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+        userName: state.user?.name || "User",
+        timestamp: new Date().toISOString(),
       };
-      const newNotification: AppNotification = {
-        id: `notif-${Date.now()}`,
-        type: "success",
-        title: "New Member Added",
-        message: `${newPerson.firstName} was successfully added as a ${newPerson.relationshipLabel.toLowerCase()} relation.`,
-        isRead: false,
-        time: "Just now",
-      };
-      set({
-        activities: [newActivity, ...state.activities],
-        notifications: [newNotification, ...state.notifications],
-      });
+      set({ activities: [newActivity, ...state.activities] });
     },
 
-    // Override editPerson to include activity + notification side effects
     editPerson: (id: string, updates: Partial<Person>) => {
       const state = get();
       const original = state.people.find((p) => p.id === id);
@@ -73,24 +59,12 @@ export const useAppStore = create<AppState>()((...a) => {
         type: "edit",
         description: desc,
         personId: id,
-        userName: state.user?.name || "Guest User",
-        timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+        userName: state.user?.name || "User",
+        timestamp: new Date().toISOString(),
       };
-      const newNotification: AppNotification = {
-        id: `notif-${Date.now()}`,
-        type: "info",
-        title: "Person Profile Updated",
-        message: `${original.firstName}'s family profile card was modified.`,
-        isRead: false,
-        time: "Just now",
-      };
-      set({
-        activities: [newActivity, ...state.activities],
-        notifications: [newNotification, ...state.notifications],
-      });
+      set({ activities: [newActivity, ...state.activities] });
     },
 
-    // Override deletePerson to include activity side effect
     deletePerson: (id: string) => {
       const state = get();
       const original = state.people.find((p) => p.id === id);
@@ -101,13 +75,12 @@ export const useAppStore = create<AppState>()((...a) => {
         id: `act-${Date.now()}`,
         type: "delete",
         description: desc,
-        userName: state.user?.name || "Guest User",
-        timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+        userName: state.user?.name || "User",
+        timestamp: new Date().toISOString(),
       };
       set({ activities: [newActivity, ...state.activities] });
     },
 
-    // Override addMediaItem to include activity + notification side effects
     addMediaItem: (mediaData: Omit<MediaItem, "id" | "uploadedAt" | "version">) => {
       media.addMediaItem(mediaData);
       const state = get();
@@ -120,24 +93,12 @@ export const useAppStore = create<AppState>()((...a) => {
         type: "media_add",
         description: activityDesc,
         personId: mediaData.personId,
-        userName: state.user?.name || "Guest User",
-        timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
+        userName: state.user?.name || "User",
+        timestamp: new Date().toISOString(),
       };
-      const newNotification: AppNotification = {
-        id: `notif-${Date.now()}`,
-        type: "success",
-        title: "Historical Document Uploaded",
-        message: `"${mediaData.title}" successfully added to the digital preservation archive.`,
-        isRead: false,
-        time: "Just now",
-      };
-      set({
-        activities: [newActivity, ...state.activities],
-        notifications: [newNotification, ...state.notifications],
-      });
+      set({ activities: [newActivity, ...state.activities] });
     },
 
-    // Override deleteMediaItem to include activity side effect
     deleteMediaItem: (id: string) => {
       const state = get();
       const original = state.media.find((m) => m.id === id);
@@ -149,7 +110,7 @@ export const useAppStore = create<AppState>()((...a) => {
         type: "media_delete",
         description: desc,
         personId: original.personId,
-        userName: state.user?.name || "Guest User",
+        userName: state.user?.name || "User",
         timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
       };
       set({ activities: [newActivity, ...state.activities] });

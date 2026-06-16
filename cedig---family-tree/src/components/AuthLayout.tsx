@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { motion } from 'motion/react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import Logo from '@/src/components/Logo';
-import AuthBackground from '@/src/components/auth/AuthBackground';
+import { motion } from "motion/react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import Logo from "@/src/components/Logo";
+import AuthBackground from "@/src/components/auth/AuthBackground";
 
 interface AuthLayoutProps {
   hero?: React.ReactNode;
@@ -12,11 +12,17 @@ interface AuthLayoutProps {
   className?: string;
 }
 
-export default function AuthLayout({ hero, form, className = '' }: AuthLayoutProps) {
+export default function AuthLayout({
+  hero,
+  form,
+  className = "",
+}: AuthLayoutProps) {
   const router = useRouter();
 
   return (
-    <div className={`min-h-screen relative overflow-x-hidden flex flex-col lg:flex-row ${className}`}>
+    <div
+      className={`min-h-screen relative overflow-x-hidden flex flex-col lg:flex-row ${className}`}
+    >
       <AuthBackground />
 
       {/* Mobile-only Header */}
@@ -30,11 +36,12 @@ export default function AuthLayout({ hero, form, className = '' }: AuthLayoutPro
         </button>
         <div className="flex items-center gap-2">
           <Logo size={32} />
+          <div className="absolute inset-0 bg-black/50 lg:bg-black/40" />
         </div>
       </header>
 
       {/* LEFT: Hero / Information Side */}
-      <div className="relative z-10 w-full lg:w-1/2 flex items-center justify-center min-h-[50vh] lg:min-h-screen p-8 lg:p-12">
+      <div className="hidden  relative z-10 w-full lg:w-1/2 lg:flex items-center justify-center min-h-[50vh] lg:min-h-screen p-8 lg:p-12">
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/50 lg:bg-black/40" />
         <div className="relative z-10 w-full max-w-lg">
@@ -64,13 +71,26 @@ export default function AuthLayout({ hero, form, className = '' }: AuthLayoutPro
         </motion.div>
       </div>
 
+      {/* reCAPTCHA container for Firebase Phone Auth */}
+      <div id="recaptcha-container" />
+
       {/* Mobile Footer */}
       <footer className="lg:hidden relative z-20 flex items-center justify-between px-5 py-4 text-xs text-white/60 border-t border-white/10 bg-black/20 backdrop-blur-sm">
         <span>© 2026 CEDIG</span>
         <div className="flex gap-4">
-          <button onClick={() => router.push("/")} className="hover:text-white transition-colors cursor-pointer">Нууцлалын бодлого</button>
+          <button
+            onClick={() => router.push("/")}
+            className="hover:text-white transition-colors cursor-pointer"
+          >
+            Нууцлалын бодлого
+          </button>
           <span>•</span>
-          <button onClick={() => router.push("/")} className="hover:text-white transition-colors cursor-pointer">Тусламж</button>
+          <button
+            onClick={() => router.push("/")}
+            className="hover:text-white transition-colors cursor-pointer"
+          >
+            Тусламж
+          </button>
         </div>
       </footer>
     </div>

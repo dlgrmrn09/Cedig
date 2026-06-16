@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import AuthLayout from "@/src/components/AuthLayout";
@@ -9,26 +10,126 @@ import { Scroll, Users, BookOpen, Shield } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { login } = useAppStore();
+  const {
+    registerWithEmailPassword,
+    registerWithPhonePassword,
+    loginWithGoogle,
+    loginWithFacebook,
+    startPhoneVerification,
+    confirmPhoneOtp,
+    clearPhoneVerification,
+    phoneVerificationSent,
+    isLoading,
+    addNotification,
+  } = useAppStore();
+  const [error, setError] = useState<string | null>(null);
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneDataPending, setPhoneDataPending] = useState<{
+    username: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    countryCode: string;
+    password: string;
+  } | null>(null);
 
-  const handleEmailRegister = (data: { username: string; firstName: string; lastName: string; email: string }) => {
-    login(data.email, `${data.firstName} ${data.lastName}`, data.username);
-    router.push("/onboarding");
+  const handleEmailRegister = async (data: {
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }) => {
+    setError(null);
+    try {
+      await registerWithEmailPassword(
+        data.firstName,
+        data.lastName,
+        data.username,
+        data.email,
+        data.password,
+        true,
+        true,
+      );
+      router.replace("/verify-email");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Бүртгэл үүсгэхэд алдаа гарлаа";
+      setError(msg);
+      addNotification("warn", "Бүртгэлийн алдаа", msg);
+    }
   };
 
-  const handlePhoneRegister = (data: { username: string; firstName: string; lastName: string; phone: string }) => {
-    login(`${data.firstName} ${data.lastName}`, `${data.firstName} ${data.lastName}`, data.username);
-    router.push("/onboarding");
+  const handlePhoneRegister = async (data: {
+    username: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    countryCode: string;
+    password: string;
+  }) => {
+    setError(null);
+    try {
+      await startPhoneVerification(data.phone, data.countryCode);
+      setPhoneDataPending(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Утас баталгаажуулах алдаа гарлаа";
+      setError(msg);
+      addNotification("warn", "Баталгаажуулалт", msg);
+    }
   };
 
-  const handleGoogleRegister = () => {
-    login("google-user@cedig.mn", "Google Хэрэглэгч");
-    router.push("/onboarding");
+  const handleConfirmPhoneOtp = async () => {
+    setError(null);
+    try {
+      await confirmPhoneOtp(phoneOtp);
+      if (phoneDataPending) {
+        await registerWithPhonePassword(
+          phoneDataPending.firstName,
+          phoneDataPending.lastName,
+          phoneDataPending.username,
+          phoneDataPending.phone,
+          phoneDataPending.countryCode,
+          phoneDataPending.password,
+          true,
+          true,
+        );
+      }
+      router.replace("/family-tree");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "OTP баталгаажуулах алдаа гарлаа";
+      setError(msg);
+      addNotification("warn", "OTP алдаа", msg);
+    }
   };
 
-  const handleFacebookRegister = () => {
-    login("fb-user@cedig.mn", "Facebook Хэрэглэгч");
-    router.push("/onboarding");
+  const handleCancelPhoneVerification = () => {
+    clearPhoneVerification();
+    setPhoneOtp("");
+    setPhoneDataPending(null);
+  };
+
+  const handleGoogleRegister = async () => {
+    setError(null);
+    try {
+      await loginWithGoogle();
+      router.replace("/family-tree");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Google бүртгэл амжилтгүй";
+      setError(msg);
+      addNotification("warn", "Google бүртгэл", msg);
+    }
+  };
+
+  const handleFacebookRegister = async () => {
+    setError(null);
+    try {
+      await loginWithFacebook();
+      router.replace("/family-tree");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Facebook бүртгэл амжилтгүй";
+      setError(msg);
+      addNotification("warn", "Facebook бүртгэл", msg);
+    }
   };
 
   return (
@@ -49,6 +150,12 @@ export default function RegisterPage() {
               Өвөг дээдсийнхээ түүхийг тоон архивт хадгалж, хойч үедээ өвлүүлээрэй.
             </p>
           </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
 
           <div className="space-y-3">
             {[
@@ -86,6 +193,12 @@ export default function RegisterPage() {
             onLogin={() => router.push("/login")}
             onGoogleRegister={handleGoogleRegister}
             onFacebookRegister={handleFacebookRegister}
+            phoneVerificationSent={phoneVerificationSent}
+            phoneOtp={phoneOtp}
+            onPhoneOtpChange={setPhoneOtp}
+            onConfirmPhoneOtp={handleConfirmPhoneOtp}
+            onCancelPhoneVerification={handleCancelPhoneVerification}
+            isLoading={isLoading}
           />
         </div>
       }

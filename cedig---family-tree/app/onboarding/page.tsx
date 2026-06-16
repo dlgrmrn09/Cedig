@@ -1,12 +1,15 @@
 "use client";
 import { useEffect } from "react";
-import { useAppStore } from "@/src/store";
-import OnboardingScreen from "@/src/components/OnboardingScreen";
+import { useRouter } from "next/navigation";
 
 export default function OnboardingPage() {
-  useEffect(() => {
-    useAppStore.setState({ currentView: "onboarding" });
-  }, []);
+  const router = useRouter();
 
-  return <OnboardingScreen />;
+  useEffect(() => {
+    // Onboarding is now displayed inside workspace layout.
+    // Redirect to /family-tree which will show onboarding content when user has no tree.
+    router.replace("/family-tree");
+  }, [router]);
+
+  return null;
 }

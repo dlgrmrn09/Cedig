@@ -13,10 +13,10 @@ import {
   Clock,
   CreditCard,
   LogOut,
-  User,
   Image as ImageIcon,
   X,
 } from "lucide-react";
+import Avatar from "@/src/components/shared/Avatar";
 
 const TAB_ROUTES: Record<string, string> = {
   tree: "/family-tree",
@@ -43,6 +43,12 @@ export default function Sidebar() {
   const logout = useAppStore((s) => s.logout);
   const isMobileSidebarOpen = useAppStore((s) => s.isMobileSidebarOpen);
   const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen);
+
+  const handleLogout = () => {
+    logout();
+    console.log("[AUTH] Redirecting to login");
+    router.push("/login");
+  };
 
   useEffect(() => {
     if (isMobileSidebarOpen) {
@@ -192,16 +198,19 @@ export default function Sidebar() {
             (expanded ? "justify-start" : "")
           }
         >
-          <div className="w-10 h-10 rounded-full border border-bronze overflow-hidden bg-stone-700 flex items-center justify-center relative shrink-0">
-            <User className="w-5 h-5 text-stone-200" />
-          </div>
+          <Avatar
+            src={user?.avatar || null}
+            name={user?.name}
+            size={40}
+            className="border border-bronze shrink-0"
+          />
           {expanded && (
             <div className="truncate overflow-hidden whitespace-nowrap ml-3">
               <p className="caption text-white font-bold truncate">
-                {user?.name || "Баатар М."}
+                {user?.name || ""}
               </p>
               <span className="caption text-bronze font-bold uppercase tracking-wider block">
-                {user?.role || "Owner"}
+                {user?.role || ""}
               </span>
             </div>
           )}
@@ -209,7 +218,7 @@ export default function Sidebar() {
 
         <button
           id="workspace-logout-btn"
-          onClick={logout}
+          onClick={handleLogout}
           className={`w-full bg-white/5 hover:bg-white/10 text-white/80 rounded-xl font-bold flex items-center justify-center text-xs border border-white/10 cursor-pointer transition-all duration-300 ${!expanded ? "p-2.5" : "py-2.5 px-4"}`}
           title={!expanded ? "Системээс гарах" : undefined}
         >

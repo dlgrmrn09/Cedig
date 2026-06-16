@@ -15,6 +15,7 @@ import type { Person } from "@/src/types/person";
 export function useTreeCanvas() {
   const {
     people,
+    peopleLoaded,
     filters,
     setFilters,
     resetFilters,
@@ -179,6 +180,16 @@ export function useTreeCanvas() {
 
   // 2. Main generational hierarchical layout algorithm
   const nodePositions = useMemo(() => {
+    const PERSON_NODE_W = 128;
+    const GENERATION_GAP = 220;
+    const SIBLING_GAP = 100;
+    const SUBTREE_GAP = 200;
+    const COUPLE_SPAN = 240;
+    const COUPLE_HALF = COUPLE_SPAN / 2;
+    const SINGLE_WIDTH = 160;
+    const ROOT_START_X = 400;
+    const TOP_PADDING = 80;
+
     const pos: Record<string, { x: number; y: number }> = {};
     const levels: Record<string, number> = {};
     const peopleMap = new Map(visiblePeople.map((p) => [p.id, p]));
@@ -223,33 +234,41 @@ export function useTreeCanvas() {
     const processed = new Set<string>();
     const subtreeWidths: Record<string, number> = {};
 
+    const sortChildrenByBirthYear = (children: Person[]): Person[] => {
+      return [...children].sort((a, b) => {
+        const yearA = a.birthYear ?? Number.MAX_SAFE_INTEGER;
+        const yearB = b.birthYear ?? Number.MAX_SAFE_INTEGER;
+        return yearA - yearB;
+      });
+    };
+
     const measureSubtree = (id: string): number => {
       if (subtreeWidths[id] !== undefined) return subtreeWidths[id];
 
       const person = peopleMap.get(id);
-      if (!person) return 140;
+      if (!person) return SINGLE_WIDTH;
 
       const spouseId = person.spouseId;
-      const childIds = visiblePeople
-        .filter(
-          (p) =>
-            p.fatherId === id ||
-            p.motherId === id ||
-            (spouseId && (p.fatherId === spouseId || p.motherId === spouseId)),
-        )
-        .map((p) => p.id);
-
-      const uniqueChildren = Array.from(new Set(childIds));
+      const rawChildren = visiblePeople.filter(
+        (p) =>
+          p.fatherId === id ||
+          p.motherId === id ||
+          (spouseId && (p.fatherId === spouseId || p.motherId === spouseId)),
+      );
+      const sortedChildren = sortChildrenByBirthYear(rawChildren);
+      const uniqueChildren = Array.from(
+        new Set(sortedChildren.map((p) => p.id)),
+      );
 
       let childrenWidth = 0;
       if (uniqueChildren.length > 0) {
         uniqueChildren.forEach((childId) => {
           childrenWidth += measureSubtree(childId);
         });
-        childrenWidth += (uniqueChildren.length - 1) * 80;
+        childrenWidth += (uniqueChildren.length - 1) * SIBLING_GAP;
       }
 
-      let ownWidth = spouseId ? 320 : 140;
+      let ownWidth = spouseId ? COUPLE_SPAN + PERSON_NODE_W : SINGLE_WIDTH;
       const w = Math.max(ownWidth, childrenWidth);
       subtreeWidths[id] = w;
       return w;
@@ -266,43 +285,44 @@ export function useTreeCanvas() {
       const person = peopleMap.get(id);
       if (!person) return;
 
-      const y = 80 + level * 200;
+      const y = TOP_PADDING + level * GENERATION_GAP;
       const spouseId = person.spouseId;
 
       if (spouseId) {
         processed.add(spouseId);
-        pos[id] = { x: startX - 110, y };
-        pos[spouseId] = { x: startX + 110, y };
+        pos[id] = { x: startX - COUPLE_HALF, y };
+        pos[spouseId] = { x: startX + COUPLE_HALF, y };
       } else {
         pos[id] = { x: startX, y };
       }
 
-      const childIds = visiblePeople
-        .filter(
-          (p) =>
-            p.fatherId === id ||
-            p.motherId === id ||
-            (spouseId && (p.fatherId === spouseId || p.motherId === spouseId)),
-        )
-        .map((p) => p.id);
-      const uniqueChildren = Array.from(new Set(childIds));
+      const rawChildren = visiblePeople.filter(
+        (p) =>
+          p.fatherId === id ||
+          p.motherId === id ||
+          (spouseId && (p.fatherId === spouseId || p.motherId === spouseId)),
+      );
+      const sortedChildren = sortChildrenByBirthYear(rawChildren);
+      const uniqueChildren = Array.from(
+        new Set(sortedChildren.map((p) => p.id)),
+      );
 
       if (uniqueChildren.length > 0) {
         let totalChildrenWidth = 0;
         const childWidths = uniqueChildren.map((childId) => {
-          const w = subtreeWidths[childId] || 140;
+          const w = subtreeWidths[childId] || SINGLE_WIDTH;
           totalChildrenWidth += w;
           return w;
         });
 
-        totalChildrenWidth += (uniqueChildren.length - 1) * 80;
+        totalChildrenWidth += (uniqueChildren.length - 1) * SIBLING_GAP;
         let currentX = startX - totalChildrenWidth / 2;
 
         uniqueChildren.forEach((childId, idx) => {
           const childWidth = childWidths[idx];
           const cX = currentX + childWidth / 2;
           assignPositions(childId, cX, level + 1);
-          currentX += childWidth + 80;
+          currentX += childWidth + SIBLING_GAP;
         });
       }
     };
@@ -321,19 +341,19 @@ export function useTreeCanvas() {
       return true;
     });
 
-    let rootStartX = 370;
+    let rootStartX = ROOT_START_X;
     roots.forEach((root) => {
       assignPositions(root.id, rootStartX, levels[root.id] || 0);
-      rootStartX += (subtreeWidths[root.id] || 320) + 180;
+      rootStartX += (subtreeWidths[root.id] || COUPLE_SPAN + PERSON_NODE_W) + SUBTREE_GAP;
     });
 
     visiblePeople.forEach((p) => {
       if (!pos[p.id]) {
         let parentId = p.fatherId || p.motherId;
         if (parentId && pos[parentId]) {
-          pos[p.id] = { x: pos[parentId].x, y: pos[parentId].y + 200 };
+          pos[p.id] = { x: pos[parentId].x, y: pos[parentId].y + GENERATION_GAP };
         } else {
-          pos[p.id] = { x: 370, y: 80 + (levels[p.id] || 0) * 200 };
+          pos[p.id] = { x: ROOT_START_X, y: TOP_PADDING + (levels[p.id] || 0) * GENERATION_GAP };
         }
       }
     });
@@ -472,26 +492,38 @@ export function useTreeCanvas() {
             const pos2 = nodePositions[p2.id];
 
             if (pos1 && pos2) {
-              const HUB_Y_OFFSET = 45;
-              const HUB_CONTAINER_HALF = 16;
-              const NODE_HALF = 57.5;
-              const midX = (pos1.x + pos2.x) / 2 + NODE_HALF - HUB_CONTAINER_HALF;
-              const midY = pos1.y + NODE_HALF - HUB_CONTAINER_HALF + HUB_Y_OFFSET;
+              const PERSON_NODE_W = 128;
+              const PERSON_NODE_H = 156;
+              const HUB_SIZE = 32;
+              const HUB_OFFSET_BELOW = 60;
+
+              const p1CenterX = pos1.x + PERSON_NODE_W / 2;
+              const p2CenterX = pos2.x + PERSON_NODE_W / 2;
+              const hubCenterX = (p1CenterX + p2CenterX) / 2;
+              const hubX = hubCenterX - HUB_SIZE / 2;
+              const hubY = pos1.y + PERSON_NODE_H + HUB_OFFSET_BELOW;
               const marriageId = `marriage-${coupleKey}`;
 
               // Check if couple has child descendants in current tree
-              const children = people.filter(
-                (c) =>
-                  (c.fatherId === p1.id && c.motherId === p2.id) ||
-                  (c.fatherId === p2.id && c.motherId === p1.id),
-              );
+              const rawChildren = people
+                .filter(
+                  (c) =>
+                    (c.fatherId === p1.id && c.motherId === p2.id) ||
+                    (c.fatherId === p2.id && c.motherId === p1.id),
+                )
+                .sort((a, b) => {
+                  const yearA = a.birthYear ?? Number.MAX_SAFE_INTEGER;
+                  const yearB = b.birthYear ?? Number.MAX_SAFE_INTEGER;
+                  return yearA - yearB;
+                });
+              const children = rawChildren;
               const hasChildren = children.length > 0;
 
               // 1. Add gold central connection hub
               nodesList.push({
                 id: marriageId,
                 type: "marriageNode",
-                position: { x: midX, y: midY },
+                position: { x: hubX, y: hubY },
                 data: {
                   p1,
                   p2,
@@ -594,7 +626,7 @@ export function useTreeCanvas() {
       const target = searchMatches[index];
       const pos = nodePositions[target.id];
       if (pos) {
-        setCenter(pos.x + 57.5, pos.y + 57.5, { zoom: 1.1, duration: 800 });
+        setCenter(pos.x + 64, pos.y + 78, { zoom: 1.1, duration: 800 });
       }
     },
     [searchMatches, nodePositions, setCenter],
@@ -639,6 +671,7 @@ export function useTreeCanvas() {
     setAddingRelation,
     activePersonId,
     people,
+    peopleLoaded,
     filteredPeople,
     // Local state
     localSearch,

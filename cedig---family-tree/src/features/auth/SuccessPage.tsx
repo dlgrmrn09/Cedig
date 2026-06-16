@@ -169,13 +169,17 @@ export default function SuccessPage() {
         >
           {stage === 'complete' && (
             <motion.button
-              onClick={() => { completeAuthFlow(); router.push('/onboarding'); }}
+              onClick={() => {
+                completeAuthFlow();
+                console.log('[SUCCESS] Auth flow complete, redirecting to /family-tree');
+                router.replace("/family-tree");
+              }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex items-center gap-3 px-8 py-4 bg-bronze text-ink rounded-xl font-semibold text-base shadow-xl shadow-bronze/20 hover:bg-bronze/90 transition-all cursor-pointer"
             >
               <TreePine className="w-5 h-5" />
-              Ургийн Мод Үүсгэх
+              Ургийн Мод
             </motion.button>
           )}
         </motion.div>

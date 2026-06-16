@@ -1,2 +1,9 @@
-package-lock.json
-package.json
+node_modules/
+.env
+.env.local
+dist/
+tests/
+build/
+*.log
+coverage/
+.nyc_output/

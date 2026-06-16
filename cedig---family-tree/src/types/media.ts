@@ -5,6 +5,8 @@ export interface MediaItem {
   description: string;
   type: 'photo' | 'document' | 'certificate';
   url: string;
+  fileSize: number | null;
+  mimeType: string | null;
   uploadedAt: string;
   version: number;
 }

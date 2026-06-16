@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const PAGE_SIZE = 10;
@@ -55,12 +55,14 @@ export function useTabUrlState(tabPrefix: string) {
 }
 
 export function usePaginatedData<T>(data: T[], page: number, pageSize: number = PAGE_SIZE) {
-  const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * pageSize;
-  return {
-    paginatedData: data.slice(start, start + pageSize),
-    totalPages,
-    totalItems: data.length,
-  };
+  return useMemo(() => {
+    const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * pageSize;
+    return {
+      paginatedData: data.slice(start, start + pageSize),
+      totalPages,
+      totalItems: data.length,
+    };
+  }, [data, page, pageSize]);
 }

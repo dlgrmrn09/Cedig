@@ -42,7 +42,7 @@ export default function BookCover({ activePerson }: BookCoverProps) {
               УГ СУДАР
             </h1>
             <p className="text-stone-300 text-base font-serif italic mt-1 leading-tight tracking-[0.1em]">
-              {activePerson.clanName || "БОРЖИГОН"} ОВОГТ
+              {activePerson.clanName || ""} ОВОГТ
             </p>
             <p className="text-bronze/90 text-lg font-serif tracking-widest mt-2 block font-semibold">
               {activePerson.firstName} • СУДАР

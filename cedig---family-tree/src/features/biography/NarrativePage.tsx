@@ -6,6 +6,7 @@ import { Award } from "lucide-react";
 interface NarrativePageProps {
   activePerson: {
     biography?: string;
+    notes?: string;
     firstName: string;
     birthYear: number;
     birthPlace?: string;
@@ -40,29 +41,30 @@ export default function NarrativePage({ activePerson }: NarrativePageProps) {
               </div>
             ) : (
               <p className="italic text-stone-400">
-                Удам судар, залуу нас, амьдрал ололтын талаарх тэмдэглэл
-                харах бичигдээгүй байна. Засах горимоор засаж судар
-                баяжуулаарай.
+                Намтар тэмдэглэгдээгүй байна.
               </p>
             )}
           </div>
 
           <div className="pt-3 border-t border-[#735c00]/10 space-y-2.5 flex-1 text-left">
             <h5 className="text-[8.5px] text-[#735c00] uppercase tracking-widest font-black block">
-               Он цагийн товчоон
+              тэмдэглэл
             </h5>
 
             <div className="space-y-2">
               <div className="flex gap-2 items-start text-[10.5px] text-left">
-                <span className="font-mono font-bold text-[#735c00] shrink-0 bg-amber-50 px-1 py-[1px] rounded border border-[#735c00]/10">
-                  {activePerson.birthYear} он
-                </span>
-                <div className="text-stone-700 leading-tight">
-                  <strong>Мэндэлсэн:</strong>{" "}
-                  {activePerson.birthPlace ||
-                    "Монгол Улсын Тамир голын тал нуур хороонд"}{" "}
-                  Аймагт айлын дунд хүү болон мэдэлжээ .
-                </div>
+                {activePerson.notes ? (
+                  <div className="whitespace-pre-wrap">
+                    <span className="float-left text-3xl font-serif text-[#735c00] mr-1.5 font-extrabold leading-none pt-0.5 select-none">
+                      {activePerson.notes.charAt(0)}
+                    </span>
+                    {activePerson.notes.slice(1)}
+                  </div>
+                ) : (
+                  <p className="italic text-stone-400">
+                    Намтар тэмдэглэгдээгүй байна.
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-2 items-start text-[10.5px] text-left">
@@ -70,9 +72,10 @@ export default function NarrativePage({ activePerson }: NarrativePageProps) {
                   Ажил
                 </span>
                 <div className="text-stone-700 leading-tight">
-                  <strong>Мэргэжил:</strong> Насан туршид &ldquo;
-                  {activePerson.occupation || "Төрийн алба хаагч"}&rdquo;
-                  -аар насаараа ажилжээ.
+                  <strong>Мэргэжил:</strong>{" "}
+                  {activePerson.occupation
+                    ? `${activePerson.occupation} мэргэжилтэй.`
+                    : "Мэргэжил тэмдэглэгдээгүй."}
                 </div>
               </div>
             </div>

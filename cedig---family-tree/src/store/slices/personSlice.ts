@@ -1,17 +1,12 @@
 import type { StateCreator } from "zustand";
 import type { Person, AddingRelationType } from "@/src/types/person";
+import { createPerson, updatePerson, deletePerson } from "@/src/services/memberService";
 
-const initialPeople: Person[] = [
-  { id: "1", firstName: "Demberel", lastName: "Bat-Erdene", surname: "Bat-Erdene", clanName: "Sartuul", birthPlace: "Ulaanbaatar", biography: "Sartuul clan header born in Ulaanbaatar. Resided and conducted scientific archives in Khentii province. Spent life recording lineage stories and historic scrolls.", zodiacSign: "Capricorn", birthYear: 1912, birthDate: "1912-01-12", deathDate: "1988", gender: "male", occupation: "Archivist & Scholar", education: "Ulaanbaatar State Academy", awards: ["State Honorary Order of the Polar Star", "Outstanding Academic Scroll"], notes: "Primary scroll lines start here. Discovered high-fidelity family registers dating back to late Qing period.", relationshipLabel: "DIRECT LINE", verified: true, pendingOralHistory: false },
-  { id: "2", firstName: "Ganbold", lastName: "Demberel", surname: "Demberel", clanName: "Sartuul", birthPlace: "Ulaanbaatar", biography: "A prominent community elder and legal consultant. Earned numerous awards in archival recording. Continued Demberel's research in preservation of genealogy data.", zodiacSign: "Taurus", birthYear: 1945, birthDate: "1945-05-18", deathDate: "Present", gender: "male", occupation: "Retired Jurist", education: "National University of Mongolia", awards: ["Outstanding Citizen Award", "Cultural Heritage Medal"], notes: "Holds the primary hand-written book records for the CEDIG archive.", relationshipLabel: "HEAD OF CLAN", verified: true, pendingOralHistory: false, fatherId: "1", spouseId: "3" },
-  { id: "3", firstName: "Enkhjargal", lastName: "D.", surname: "Dorj", clanName: "Borgijin", birthPlace: "Arkhangai", biography: "Matriarch of the family tree and leading voice in oral narratives of nomadic lineages. Deeply knowledgeable on the family branch trees in western provinces.", zodiacSign: "Virgo", birthYear: 1948, birthDate: "1948-09-02", deathDate: "Present", gender: "female", occupation: "Anatomist Professor", education: "Mongolian Medical University", awards: ["Academic Excellence Trophy"], notes: "Main source for early 20th-century oral records. Verified authenticity of Sartuul connections.", relationshipLabel: "MATRIARCH", verified: true, pendingOralHistory: false, spouseId: "2" },
-  { id: "4", firstName: "Batmunkh", lastName: "Ganbold", surname: "Ganbold", clanName: "Sartuul", birthPlace: "Ulaanbaatar", biography: "Tech pioneer and systems architect based in Ulaanbaatar. Initiated the digital preservation of family tree archives (CEDIG project).", zodiacSign: "Scorpio", birthYear: 1975, birthDate: "1975-11-04", deathDate: "Present", gender: "male", occupation: "Lead Systems Developer", education: "Science and Technology University of Mongolia", awards: ["National Innovation Award (2024)", "CEDIG Digital Design Medal"], notes: "Active workspace maintainer.", relationshipLabel: "DESCENDANT", verified: true, pendingOralHistory: false, fatherId: "2", motherId: "3" },
-  { id: "5", firstName: "Narantuya", lastName: "Ganbold", surname: "Ganbold", clanName: "Sartuul", birthPlace: "Ulaanbaatar", biography: "Independent researcher of linguistics and historic folklore. Recorded key interviews regarding the Sartuul folk songs.", zodiacSign: "Cancer", birthYear: 1978, birthDate: "1978-07-20", deathDate: "Present", gender: "female", occupation: "Linguist & Philologist", education: "State Pedagogical University", notes: "Documented early-mid 20th century poetry of the clan.", relationshipLabel: "DESCENDANT", verified: false, pendingOralHistory: true, fatherId: "2", motherId: "3" },
-  { id: "6", firstName: "Bolormaa", lastName: "Batmunkh", surname: "Batmunkh", clanName: "Sartuul", birthPlace: "Darkhan", biography: "Young descendant expressing active interest in conserving heritage and translating the ancient records to young school children.", zodiacSign: "Pisces", birthYear: 2005, birthDate: "2005-03-12", deathDate: "Present", gender: "female", occupation: "Undergrad Student", notes: "Supplements digital interface uploads with scanned translations.", relationshipLabel: "DESCENDANT", verified: true, pendingOralHistory: false, fatherId: "4" },
-];
+const initialPeople: Person[] = [];
 
 export interface PersonSlice {
   people: Person[];
+  peopleLoaded: boolean;
   activePersonId: string | null;
   editingPersonId: string | null;
   addingRelationToId: string | null;
@@ -23,10 +18,17 @@ export interface PersonSlice {
   setActivePersonId: (id: string | null) => void;
   setEditingPersonId: (id: string | null) => void;
   setAddingRelation: (id: string | null, type: AddingRelationType) => void;
+  setPeople: (people: Person[]) => void;
+  setPeopleLoaded: (loaded: boolean) => void;
+
+  addPersonAsync: (treeId: string, data: Omit<Person, "id" | "verified" | "pendingOralHistory">) => Promise<Person>;
+  editPersonAsync: (treeId: string, id: string, updates: Partial<Person>) => Promise<Person>;
+  deletePersonAsync: (treeId: string, id: string) => Promise<void>;
 }
 
-export const createPersonSlice: StateCreator<PersonSlice, [], [], PersonSlice> = (set) => ({
+export const createPersonSlice: StateCreator<PersonSlice, [], [], PersonSlice> = (set, get) => ({
   people: initialPeople,
+  peopleLoaded: false,
   activePersonId: null,
   editingPersonId: null,
   addingRelationToId: null,
@@ -87,4 +89,99 @@ export const createPersonSlice: StateCreator<PersonSlice, [], [], PersonSlice> =
   setActivePersonId: (id) => set({ activePersonId: id }),
   setEditingPersonId: (id) => set({ editingPersonId: id }),
   setAddingRelation: (id, type) => set({ addingRelationToId: id, addingRelationType: type }),
+  setPeople: (people) => set({ people }),
+  setPeopleLoaded: (loaded) => set({ peopleLoaded: loaded }),
+
+  addPersonAsync: async (treeId: string, personData) => {
+    try {
+      const newPerson = await createPerson(treeId, personData);
+
+      const { addingRelationToId, addingRelationType } = get();
+
+      if (addingRelationToId && addingRelationType) {
+        const anchorId = addingRelationToId;
+
+        if (addingRelationType === "father") {
+          await updatePerson(treeId, anchorId, { fatherId: newPerson.id });
+        } else if (addingRelationType === "mother") {
+          await updatePerson(treeId, anchorId, { motherId: newPerson.id });
+        } else if (addingRelationType === "spouse") {
+          await updatePerson(treeId, anchorId, { spouseId: newPerson.id });
+        }
+      }
+
+      set((s) => {
+        let updatedPeople = [...s.people, newPerson];
+
+        if (s.addingRelationToId && s.addingRelationType) {
+          const targetId = s.addingRelationToId;
+          const relType = s.addingRelationType;
+
+          updatedPeople = updatedPeople.map((p) => {
+            if (p.id === targetId) {
+              if (relType === "father") return { ...p, fatherId: newPerson.id };
+              if (relType === "mother") return { ...p, motherId: newPerson.id };
+              if (relType === "spouse") return { ...p, spouseId: newPerson.id };
+            }
+            if (p.id === newPerson.id && relType === "spouse") {
+              return { ...p, spouseId: targetId };
+            }
+            return p;
+          });
+
+          const targetPerson = updatedPeople.find((p) => p.id === targetId);
+          if (relType === "father" && targetPerson?.motherId) {
+            updatedPeople = updatedPeople.map((p) =>
+              p.id === targetPerson.motherId ? { ...p, spouseId: newPerson.id } : p
+            );
+          }
+          if (relType === "mother" && targetPerson?.fatherId) {
+            updatedPeople = updatedPeople.map((p) =>
+              p.id === targetPerson.fatherId ? { ...p, spouseId: newPerson.id } : p
+            );
+          }
+        }
+
+        return { people: updatedPeople };
+      });
+      return newPerson;
+    } catch (error) {
+      console.error('Failed to add person:', error);
+      throw error;
+    }
+  },
+
+  editPersonAsync: async (treeId: string, id: string, updates: Partial<Person>) => {
+    try {
+      const updated = await updatePerson(treeId, id, updates);
+      set((s) => ({
+        people: s.people.map((p) => (p.id === id ? updated : p)),
+      }));
+      return updated;
+    } catch (error) {
+      console.error('Failed to edit person:', error);
+      throw error;
+    }
+  },
+
+  deletePersonAsync: async (treeId: string, id: string) => {
+    try {
+      await deletePerson(treeId, id);
+      set((s) => ({
+        people: s.people
+          .filter((p) => p.id !== id)
+          .map((p) => {
+            const clean = { ...p };
+            if (clean.fatherId === id) delete clean.fatherId;
+            if (clean.motherId === id) delete clean.motherId;
+            if (clean.spouseId === id) delete clean.spouseId;
+            return clean;
+          }),
+        activePersonId: s.activePersonId === id ? null : s.activePersonId,
+      }));
+    } catch (error) {
+      console.error('Failed to delete person:', error);
+      throw error;
+    }
+  },
 });

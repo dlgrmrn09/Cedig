@@ -2,6 +2,22 @@
 
 import { BaseEdge, type EdgeProps } from "@xyflow/react";
 
+function buildOrthogonalPath(
+  sx: number,
+  sy: number,
+  tx: number,
+  ty: number,
+): string {
+  const vertDrop = 14;
+
+  return [
+    `M ${sx} ${sy}`,
+    `L ${sx} ${sy + vertDrop}`,
+    `L ${tx} ${sy + vertDrop}`,
+    `L ${tx} ${ty}`,
+  ].join(" ");
+}
+
 export default function SpouseEdge({
   id,
   sourceX,
@@ -11,8 +27,7 @@ export default function SpouseEdge({
   style = {},
   markerEnd,
 }: EdgeProps) {
-  const controlX = sourceX + (targetX - sourceX) * 0.5;
-  const path = `M ${sourceX} ${sourceY} C ${controlX} ${sourceY}, ${controlX} ${targetY}, ${targetX} ${targetY}`;
+  const path = buildOrthogonalPath(sourceX, sourceY, targetX, targetY);
 
   return (
     <BaseEdge
@@ -24,6 +39,7 @@ export default function SpouseEdge({
         stroke: "#C4956A",
         strokeWidth: 4,
         strokeLinecap: "round",
+        strokeLinejoin: "round",
       }}
     />
   );
