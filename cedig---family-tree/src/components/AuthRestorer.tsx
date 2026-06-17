@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/src/store";
-import { waitForAuthReady, ensureFreshToken } from "@/src/lib/firebase";
+import { waitForAuthReady, ensureFreshToken, handleRedirectResult } from "@/src/lib/firebase";
 import { api } from "@/src/lib/api";
+import { socialLoginWithBackend } from "@/src/services/authService";
 
 export function AuthRestorer() {
   const loadUserData = useAppStore((s) => s.loadUserData);
@@ -16,6 +17,8 @@ export function AuthRestorer() {
 
     async function restore() {
       try {
+        const redirectResult = await handleRedirectResult();
+
         const firebaseUser = await waitForAuthReady();
 
         if (!firebaseUser) {
@@ -32,6 +35,19 @@ export function AuthRestorer() {
         }
 
         api.setToken(token);
+
+        if (redirectResult) {
+          const providerId = redirectResult.user.providerData[0]?.providerId;
+          const provider = providerId === 'google.com' ? 'google' : providerId === 'facebook.com' ? 'facebook' : null;
+          if (provider) {
+            try {
+              await socialLoginWithBackend(token, provider);
+            } catch {
+              console.warn('[AUTH] Backend social login sync skipped');
+            }
+          }
+        }
+
         console.log("[AUTH] Fresh token stored, restoring session...");
 
         await loadUserData();

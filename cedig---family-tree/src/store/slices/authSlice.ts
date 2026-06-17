@@ -1,6 +1,6 @@
 import type { StateCreator } from "zustand";
 import type { ViewType, WorkspaceTab } from "@/src/types/common";
-import { getMe, loginWithBackend, socialLoginWithBackend, backendLogout, registerWithBackend, registerWithPhone } from "@/src/services/authService";
+import { getMe, loginWithBackend, backendLogout, registerWithBackend, registerWithPhone } from "@/src/services/authService";
 import { createTree as apiCreateTree, joinTree as apiJoinTree } from "@/src/services/familyService";
 import { loginWithGoogle, loginWithFacebook, loginWithEmail, registerWithEmail, logout as firebaseLogout, sendVerificationEmail, sendResetPasswordEmail, reauthenticate, verifyThenUpdateEmail } from "@/src/lib/firebase";
 import { api } from "@/src/lib/api";
@@ -341,86 +341,9 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
   loginWithGoogle: async () => {
     set({ isLoading: true });
     try {
-      const { user: firebaseUser, token } = await loginWithGoogle();
-      api.setToken(token);
-
-      try {
-        await socialLoginWithBackend(token, 'google');
-      } catch {
-        // Backend social verification is optional - Firebase auth is sufficient
-        console.warn('Backend social login sync skipped');
-      }
-
-      const result = await getMe();
-      if (result?.user) {
-        setAuthCookie();
-        const treesWithRoles = result.trees.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          code: t.code,
-          role: (t.role || 'Viewer') as TreeInfo['role'],
-        }));
-
-        const ownedTrees = treesWithRoles.filter((t) => t.role === 'Owner');
-        const sharedTrees = treesWithRoles.filter((t) => t.role !== 'Owner');
-
-        let activeTreeId: string | null = null;
-        if (ownedTrees.length > 0) {
-          activeTreeId = ownedTrees[0].id;
-        } else if (sharedTrees.length > 0) {
-          activeTreeId = sharedTrees[0].id;
-        }
-
-        const activeTree = treesWithRoles.find((t) => t.id === activeTreeId);
-
-        set({
-          user: {
-            id: result.user.id,
-            name: result.user.name,
-            email: result.user.email,
-            username: result.user.name.split(' ')[0] || 'user',
-            role: result.user.role as User['role'],
-            avatar: result.user.avatar,
-            code: result.user.code,
-          },
-          familyTreeCode: activeTree ? activeTree.code : null,
-          familyTreeId: activeTree ? activeTree.id : null,
-          familyTreeName: activeTree ? activeTree.name : null,
-          trees: treesWithRoles,
-          currentView: "workspace",
-        });
-        console.log('[AUTH] Google login complete', {
-          userId: result.user.id,
-          email: result.user.email,
-          ownedCount: ownedTrees.length,
-          sharedCount: sharedTrees.length,
-          treeCount: result.trees.length,
-          targetView: "workspace",
-          activeTree: activeTree?.name,
-        });
-      } else {
-        set({
-          user: {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email || 'User',
-            email: firebaseUser.email || '',
-            username: firebaseUser.displayName?.split(' ')[0] || 'user',
-            role: 'Viewer',
-            avatar: firebaseUser.photoURL || undefined,
-            code: '',
-          },
-          trees: [],
-          currentView: "workspace",
-        });
-        console.log('[AUTH] Google login complete (no backend profile)', {
-          firebaseUid: firebaseUser.uid,
-          email: firebaseUser.email,
-          targetView: "workspace",
-        });
-      }
+      await loginWithGoogle();
     } catch (error) {
       console.error('[AUTH] Google login failed:', error);
-    } finally {
       set({ isLoading: false });
     }
   },
@@ -428,85 +351,9 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
   loginWithFacebook: async () => {
     set({ isLoading: true });
     try {
-      const { user: firebaseUser, token } = await loginWithFacebook();
-      api.setToken(token);
-
-      try {
-        await socialLoginWithBackend(token, 'facebook');
-      } catch {
-        console.warn('Backend social login sync skipped');
-      }
-
-      const result = await getMe();
-      if (result?.user) {
-        setAuthCookie();
-        const treesWithRoles = result.trees.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          code: t.code,
-          role: (t.role || 'Viewer') as TreeInfo['role'],
-        }));
-
-        const ownedTrees = treesWithRoles.filter((t) => t.role === 'Owner');
-        const sharedTrees = treesWithRoles.filter((t) => t.role !== 'Owner');
-
-        let activeTreeId: string | null = null;
-        if (ownedTrees.length > 0) {
-          activeTreeId = ownedTrees[0].id;
-        } else if (sharedTrees.length > 0) {
-          activeTreeId = sharedTrees[0].id;
-        }
-
-        const activeTree = treesWithRoles.find((t) => t.id === activeTreeId);
-
-        set({
-          user: {
-            id: result.user.id,
-            name: result.user.name,
-            email: result.user.email,
-            username: result.user.name.split(' ')[0] || 'user',
-            role: result.user.role as User['role'],
-            avatar: result.user.avatar,
-            code: result.user.code,
-          },
-          familyTreeCode: activeTree ? activeTree.code : null,
-          familyTreeId: activeTree ? activeTree.id : null,
-          familyTreeName: activeTree ? activeTree.name : null,
-          trees: treesWithRoles,
-          currentView: "workspace",
-        });
-        console.log('[AUTH] Facebook login complete', {
-          userId: result.user.id,
-          email: result.user.email,
-          ownedCount: ownedTrees.length,
-          sharedCount: sharedTrees.length,
-          treeCount: result.trees.length,
-          targetView: "workspace",
-          activeTree: activeTree?.name,
-        });
-      } else {
-        set({
-          user: {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email || 'User',
-            email: firebaseUser.email || '',
-            username: firebaseUser.displayName?.split(' ')[0] || 'user',
-            role: 'Viewer',
-            avatar: firebaseUser.photoURL || undefined,
-            code: '',
-          },
-          trees: [],
-          currentView: "workspace",
-        });
-        console.log('[AUTH] Facebook login complete (no backend profile)', {
-          firebaseUid: firebaseUser.uid,
-          email: firebaseUser.email,
-          targetView: "workspace",
-        });
-      }
+      await loginWithFacebook();
     } catch (error) {
       console.error('[AUTH] Facebook login failed:', error);
-    } finally {
       set({ isLoading: false });
     }
   },

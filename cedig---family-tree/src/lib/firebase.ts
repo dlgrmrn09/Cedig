@@ -1,7 +1,8 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getAuth,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   FacebookAuthProvider,
   signInWithEmailAndPassword,
@@ -40,19 +41,28 @@ setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error('[FIREBASE] Failed to set persistence:', err);
 });
 
-const googleProvider = new GoogleAuthProvider();
-const facebookProvider = new FacebookAuthProvider();
-
 export async function loginWithGoogle() {
-  const result = await signInWithPopup(auth, googleProvider);
-  const token = await result.user.getIdToken();
-  return { user: result.user, token };
+  const provider = new GoogleAuthProvider();
+  await signInWithRedirect(auth, provider);
 }
 
 export async function loginWithFacebook() {
-  const result = await signInWithPopup(auth, facebookProvider);
-  const token = await result.user.getIdToken();
-  return { user: result.user, token };
+  const provider = new FacebookAuthProvider();
+  await signInWithRedirect(auth, provider);
+}
+
+export async function handleRedirectResult() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      console.log('[FIREBASE] Redirect sign-in successful', { uid: result.user.uid });
+      return result;
+    }
+    return null;
+  } catch (error) {
+    console.error('[FIREBASE] Redirect sign-in failed:', error);
+    return null;
+  }
 }
 
 export async function loginWithEmail(email: string, password: string) {
