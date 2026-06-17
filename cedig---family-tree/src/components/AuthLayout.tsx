@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -18,6 +19,24 @@ export default function AuthLayout({
   className = "",
 }: AuthLayoutProps) {
   const router = useRouter();
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+
+  // Clean up any active reCAPTCHA verifier when navigating away from auth pages.
+  // This prevents "already been rendered in this element" when re-entering auth flows.
+  // Using a ref ensures we only clean our own container, not other pages' containers.
+  useEffect(() => {
+    return () => {
+      const verifier = (window as any).__recaptchaVerifier;
+      if (verifier) {
+        try { verifier.clear(); } catch { /* ignore */ }
+        delete (window as any).__recaptchaVerifier;
+      }
+      delete (window as any).__recaptchaVerifyingLock;
+      if (recaptchaContainerRef.current) {
+        recaptchaContainerRef.current.innerHTML = '';
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -72,7 +91,7 @@ export default function AuthLayout({
       </div>
 
       {/* reCAPTCHA container for Firebase Phone Auth */}
-      <div id="recaptcha-container" />
+      <div id="recaptcha-container" ref={recaptchaContainerRef} />
 
       {/* Mobile Footer */}
       <footer className="lg:hidden relative z-20 flex items-center justify-between px-5 py-4 text-xs text-white/60 border-t border-white/10 bg-black/20 backdrop-blur-sm">

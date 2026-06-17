@@ -95,8 +95,8 @@ export interface JoinRequestResult {
   message?: string;
 }
 
-export async function joinTree(code: string): Promise<JoinRequestResult> {
-  const data = await api.post<JoinRequestResult>('/trees/join', { code });
+export async function joinTree(code: string, recaptchaToken?: string): Promise<JoinRequestResult> {
+  const data = await api.post<JoinRequestResult>('/trees/join', { code, recaptchaToken });
   return data;
 }
 

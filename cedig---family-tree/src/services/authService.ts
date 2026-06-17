@@ -103,8 +103,8 @@ export interface RegisterResult {
   familyTree: { code: string; name: string; id: string };
 }
 
-export async function registerWithBackend(payload: RegisterPayload): Promise<RegisterResult> {
-  const data = await api.post<RegisterResult>('/auth/register/email', payload);
+export async function registerWithBackend(payload: RegisterPayload, recaptchaToken?: string): Promise<RegisterResult> {
+  const data = await api.post<RegisterResult>('/auth/register/email', { ...payload, recaptchaToken });
   return data;
 }
 
@@ -119,8 +119,8 @@ export interface PhoneRegisterPayload {
   agreePrivacy: boolean;
 }
 
-export async function registerWithPhone(payload: PhoneRegisterPayload): Promise<RegisterResult> {
-  const data = await api.post<RegisterResult>('/auth/register/phone', payload);
+export async function registerWithPhone(payload: PhoneRegisterPayload, recaptchaToken?: string): Promise<RegisterResult> {
+  const data = await api.post<RegisterResult>('/auth/register/phone', { ...payload, recaptchaToken });
   return data;
 }
 
@@ -130,8 +130,8 @@ export interface LoginResult {
   user: BackendUserProfile;
 }
 
-export async function loginWithBackend(email: string, password: string): Promise<LoginResult> {
-  const data = await api.post<LoginResult>('/auth/login/email', { email, password });
+export async function loginWithBackend(email: string, password: string, recaptchaToken?: string): Promise<LoginResult> {
+  const data = await api.post<LoginResult>('/auth/login/email', { email, password, recaptchaToken });
   return data;
 }
 

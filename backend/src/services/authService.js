@@ -40,7 +40,8 @@ function formatUserResponse(user) {
 }
 
 export async function loginWithEmail({ email, password }) {
-  const user = await userRepository.findByEmail(email);
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await userRepository.findByEmail(normalizedEmail);
   if (!user) {
     throw new UnauthorizedError('Invalid email or password');
   }
@@ -66,12 +67,13 @@ export async function loginWithPhone({ phone, countryCode, password }) {
     throw new UnauthorizedError('Invalid phone or password');
   }
 
-  const tokens = await generateTokens(result);
-  return { ...tokens, user: formatUserResponse(result) };
+  const tokens = await generateTokens(user);
+  return { ...tokens, user: formatUserResponse(user) };
 }
 
 export async function registerWithEmail(data) {
-  const existingEmail = await userRepository.findByEmail(data.email);
+  const normalizedEmail = data.email.toLowerCase().trim();
+  const existingEmail = await userRepository.findByEmail(normalizedEmail);
   if (existingEmail) {
     throw new ConflictError('Email already registered');
   }
@@ -85,7 +87,7 @@ export async function registerWithEmail(data) {
   const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
 
   const user = await userRepository.create({
-    email: data.email,
+    email: normalizedEmail,
     password: passwordHash,
     username: normalizedUsername,
     firstName: data.firstName,
@@ -223,7 +225,8 @@ export async function handleSocialLogin({ idToken, provider }) {
 }
 
 export async function forgotPassword(email) {
-  const user = await userRepository.findByEmail(email);
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await userRepository.findByEmail(normalizedEmail);
   if (!user) {
     return { message: 'If the email exists, a reset link has been sent.' };
   }
@@ -234,7 +237,7 @@ export async function forgotPassword(email) {
   await prisma.passwordResetToken.create({
     data: {
       userId: user.id,
-      email,
+      email: normalizedEmail,
       token,
       otp,
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
@@ -252,7 +255,7 @@ export async function forgotPassword(email) {
 
     await transporter.sendMail({
       from: config.emailFrom,
-      to: email,
+      to: normalizedEmail,
       subject: 'CEDIG - Password Reset OTP',
       text: `Your OTP for password reset is: ${otp}. Valid for 15 minutes.`,
       html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p><p>Valid for 15 minutes.</p>`,

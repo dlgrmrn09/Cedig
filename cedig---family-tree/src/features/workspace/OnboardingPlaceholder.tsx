@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useAppStore } from "@/src/store";
+import { useRecaptcha } from "@/src/hooks/useRecaptcha";
 import {
   PlusCircle,
   Users,
@@ -17,9 +18,11 @@ export default function OndoardingPlaceholder({ hasAnyTree }: { hasAnyTree: bool
   const router = useRouter();
   const {
     joinTreeAsync,
+    joinTreeAsyncWithCaptcha,
     createTreeAsync,
     trees,
   } = useAppStore();
+  const { executeRecaptcha, isConfigured } = useRecaptcha();
 
   const ownedTreeCount = trees.filter((t) => t.role === 'Owner').length;
   const hasTree = ownedTreeCount > 0;
@@ -76,7 +79,12 @@ export default function OndoardingPlaceholder({ hasAnyTree }: { hasAnyTree: bool
     setErrorMsg(null);
 
     try {
-      await joinTreeAsync(joinCode.toUpperCase());
+      if (isConfigured) {
+        const token = await executeRecaptcha("join_tree");
+        await joinTreeAsyncWithCaptcha(joinCode.toUpperCase(), token);
+      } else {
+        await joinTreeAsync(joinCode.toUpperCase());
+      }
       setSuccessMsg("Хүсэлт илгээгдлээ. Ургийн модны эзэмшигч таны хүсэлтийг баталгаажуулсны дараа та нэвтрэх боломжтой.");
       setTimeout(() => {
         router.push("/family-tree");

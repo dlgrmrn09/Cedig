@@ -37,6 +37,7 @@ interface LoginFormProps {
   onRegister: () => void;
   onGoogleLogin: () => void;
   onFacebookLogin: () => void;
+  isSubmitting?: boolean;
 }
 
 export default function LoginForm({
@@ -46,6 +47,7 @@ export default function LoginForm({
   onRegister,
   onGoogleLogin,
   onFacebookLogin,
+  isSubmitting = false,
 }: LoginFormProps) {
   const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);
@@ -269,12 +271,12 @@ export default function LoginForm({
           </div>
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:bg-pine/90 active:bg-pine/80 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {loading || isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Нэвтрэх
           </motion.button>
         </form>
@@ -355,12 +357,12 @@ export default function LoginForm({
           </div>
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:bg-pine/90 active:bg-pine/80 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {loading || isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Нэвтрэх
           </motion.button>
         </form>

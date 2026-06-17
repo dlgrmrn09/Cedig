@@ -9,7 +9,7 @@ const usernameField = z.string()
 
 export const emailLoginSchema = z.object({
   body: z.object({
-    email: z.string().email('Valid email is required'),
+    email: z.string().email('Valid email is required').transform((v) => v.toLowerCase().trim()),
     password: z.string().min(6, 'Password must be at least 6 characters'),
   }),
 });
@@ -27,7 +27,7 @@ export const emailRegisterSchema = z.object({
     username: usernameField,
     firstName: z.string().min(2, 'First name is required'),
     lastName: z.string().min(2, 'Last name is required'),
-    email: z.string().email('Valid email is required'),
+    email: z.string().email('Valid email is required').transform((v) => v.toLowerCase().trim()),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     agreeTerms: z.literal(true, { errorMap: () => ({ message: 'You must agree to terms' }) }),
     agreePrivacy: z.literal(true, { errorMap: () => ({ message: 'You must agree to privacy policy' }) }),
@@ -49,20 +49,20 @@ export const phoneRegisterSchema = z.object({
 
 export const forgotPasswordSchema = z.object({
   body: z.object({
-    email: z.string().email('Valid email is required'),
+    email: z.string().email('Valid email is required').transform((v) => v.toLowerCase().trim()),
   }),
 });
 
 export const verifyOtpSchema = z.object({
   body: z.object({
-    email: z.string().email(),
+    email: z.string().email().transform((v) => v.toLowerCase().trim()),
     otp: z.string().length(6, 'OTP must be 6 digits'),
   }),
 });
 
 export const resetPasswordSchema = z.object({
   body: z.object({
-    email: z.string().email(),
+    email: z.string().email().transform((v) => v.toLowerCase().trim()),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     token: z.string().min(1),
   }),
@@ -70,7 +70,7 @@ export const resetPasswordSchema = z.object({
 
 export const resendOtpSchema = z.object({
   body: z.object({
-    email: z.string().email(),
+    email: z.string().email().transform((v) => v.toLowerCase().trim()),
   }),
 });
 

@@ -682,9 +682,6 @@ export default function RegisterForm({
         </div>
       )}
 
-      {/* reCAPTCHA container for invisible verification */}
-      <div id="recaptcha-container" />
-
       {/* Login Link */}
       <p className="text-center text-sm text-stone-500">
         Аль хэдийн бүртгүүлсэн үү?{" "}

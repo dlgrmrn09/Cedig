@@ -1,18 +1,40 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import AuthLayout from "@/src/components/AuthLayout";
 import ForgotForm from "@/src/components/forms/ForgotForm";
 import { useAppStore } from "@/src/store";
+import { useRecaptcha } from "@/src/hooks/useRecaptcha";
 import { KeyRound } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const { forgotPassword } = useAppStore();
+  const { forgotPassword, addNotification } = useAppStore();
+  const { executeRecaptcha, isVerifying, isConfigured } = useRecaptcha();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (contact: string) => {
-    forgotPassword(contact);
+  const handleSubmit = async (contact: string) => {
+    console.log('[FORGOT PASSWORD] Form submitted', { contact, isConfigured });
+    setError(null);
+
+    try {
+      let token: string | undefined;
+      if (isConfigured) {
+        console.log('[FORGOT PASSWORD] Executing reCAPTCHA...');
+        token = await executeRecaptcha("forgot_password");
+        console.log('[FORGOT PASSWORD] reCAPTCHA token obtained');
+      }
+      console.log('[FORGOT PASSWORD] Calling store.forgotPassword...');
+      await forgotPassword(contact, token);
+      console.log('[FORGOT PASSWORD] forgotPassword resolved successfully');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Нууц үг сэргээхэд алдаа гарлаа";
+      console.error('[FORGOT PASSWORD] Error caught:', msg, err);
+      setError(msg);
+      addNotification("warn", "Нууц үг сэргээх алдаа", msg);
+    }
   };
 
   return (
@@ -38,6 +60,12 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-3 text-sm text-white/50">
             <p>OTP код илгээгдсэний дараа:</p>
             <ol className="space-y-2 list-decimal list-inside">
@@ -53,6 +81,9 @@ export default function ForgotPasswordPage() {
           <ForgotForm
             onSubmit={handleSubmit}
             onBack={() => router.push("/login")}
+            isSubmitting={isVerifying}
+            error={error}
+            onErrorClear={() => setError(null)}
           />
         </div>
       }

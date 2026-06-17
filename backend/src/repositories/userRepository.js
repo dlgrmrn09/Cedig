@@ -9,7 +9,9 @@ export async function findByFirebaseUid(uid) {
 }
 
 export async function findByEmail(email) {
-  return prisma.user.findUnique({ where: { email } });
+  return prisma.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+  });
 }
 
 export async function findByPhone(phone) {

@@ -20,11 +20,14 @@ type EmailData = z.infer<typeof emailSchema>;
 type PhoneData = z.infer<typeof phoneSchema>;
 
 interface ForgotFormProps {
-  onSubmit: (contact: string) => void;
+  onSubmit: (contact: string) => Promise<void>;
   onBack: () => void;
+  isSubmitting?: boolean;
+  error?: string | null;
+  onErrorClear?: () => void;
 }
 
-export default function ForgotForm({ onSubmit, onBack }: ForgotFormProps) {
+export default function ForgotForm({ onSubmit, onBack, isSubmitting = false, error, onErrorClear }: ForgotFormProps) {
   const [method, setMethod] = useState<'email' | 'phone'>('email');
   const [loading, setLoading] = useState(false);
 
@@ -38,14 +41,26 @@ export default function ForgotForm({ onSubmit, onBack }: ForgotFormProps) {
     defaultValues: { phone: '', countryCode: '+976' },
   });
 
-  const handleEmailSubmit = (data: EmailData) => {
+  const handleEmailSubmit = async (data: EmailData) => {
+    if (onErrorClear) onErrorClear();
     setLoading(true);
-    setTimeout(() => { setLoading(false); onSubmit(data.email); }, 1000);
+    try {
+      console.log('[FORGOT FORM] Email submit', { email: data.email });
+      await onSubmit(data.email);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePhoneSubmit = (data: PhoneData) => {
+  const handlePhoneSubmit = async (data: PhoneData) => {
+    if (onErrorClear) onErrorClear();
     setLoading(true);
-    setTimeout(() => { setLoading(false); onSubmit(`${data.countryCode}${data.phone}`); }, 1000);
+    try {
+      console.log('[FORGOT FORM] Phone submit', { phone: data.phone, countryCode: data.countryCode });
+      await onSubmit(`${data.countryCode}${data.phone}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClasses = "w-full bg-white border border-stone-200 rounded-xl px-4 py-3.5 text-sm text-ink placeholder:text-stone-400 focus:outline-none focus:border-bronze focus:ring-2 focus:ring-bronze/15 transition-all";
@@ -72,6 +87,14 @@ export default function ForgotForm({ onSubmit, onBack }: ForgotFormProps) {
           Бүртгэлтэй и-мэйл эсвэл утасны дугаараа оруулна уу
         </p>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2.5 text-sm text-red-700">
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Recovery Method Tabs */}
       <div className="flex gap-1.5 p-1 bg-stone-100 rounded-xl">
@@ -105,12 +128,12 @@ export default function ForgotForm({ onSubmit, onBack }: ForgotFormProps) {
           </div>
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {loading || isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             OTP Код Илгээх
           </motion.button>
         </form>
@@ -151,12 +174,12 @@ export default function ForgotForm({ onSubmit, onBack }: ForgotFormProps) {
           </div>
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={loading || isSubmitting}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {loading || isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             OTP Код Илгээх
           </motion.button>
         </form>

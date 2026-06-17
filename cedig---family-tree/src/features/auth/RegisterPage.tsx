@@ -6,12 +6,14 @@ import { motion } from "motion/react";
 import AuthLayout from "@/src/components/AuthLayout";
 import RegisterForm from "./RegisterForm";
 import { useAppStore } from "@/src/store";
+import { useRecaptcha } from "@/src/hooks/useRecaptcha";
 import { Scroll, Users, BookOpen, Shield } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const {
     registerWithEmailPassword,
+    registerWithEmailPasswordAndCaptcha,
     registerWithPhonePassword,
     loginWithGoogle,
     loginWithFacebook,
@@ -22,6 +24,7 @@ export default function RegisterPage() {
     isLoading,
     addNotification,
   } = useAppStore();
+  const { executeRecaptcha, isVerifying, isConfigured } = useRecaptcha();
   const [error, setError] = useState<string | null>(null);
   const [phoneOtp, setPhoneOtp] = useState("");
   const [phoneDataPending, setPhoneDataPending] = useState<{
@@ -42,15 +45,29 @@ export default function RegisterPage() {
   }) => {
     setError(null);
     try {
-      await registerWithEmailPassword(
-        data.firstName,
-        data.lastName,
-        data.username,
-        data.email,
-        data.password,
-        true,
-        true,
-      );
+      if (isConfigured) {
+        const token = await executeRecaptcha("register");
+        await registerWithEmailPasswordAndCaptcha(
+          data.firstName,
+          data.lastName,
+          data.username,
+          data.email,
+          data.password,
+          token,
+          true,
+          true,
+        );
+      } else {
+        await registerWithEmailPassword(
+          data.firstName,
+          data.lastName,
+          data.username,
+          data.email,
+          data.password,
+          true,
+          true,
+        );
+      }
       router.replace("/verify-email");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Бүртгэл үүсгэхэд алдаа гарлаа";
@@ -198,7 +215,7 @@ export default function RegisterPage() {
             onPhoneOtpChange={setPhoneOtp}
             onConfirmPhoneOtp={handleConfirmPhoneOtp}
             onCancelPhoneVerification={handleCancelPhoneVerification}
-            isLoading={isLoading}
+            isLoading={isLoading || isVerifying}
           />
         </div>
       }

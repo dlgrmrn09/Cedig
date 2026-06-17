@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useRecaptcha } from "@/src/hooks/useRecaptcha";
 import { useAppStore } from "@/src/store";
 import type { WorkspaceTab } from "@/src/types/common";
 import { TreeSwitcher } from "./TreeSwitcher";
@@ -41,8 +42,10 @@ export function WorkspaceHeader() {
     setMobileSidebarOpen,
     familyTreeCode,
     joinTreeAsync,
+    joinTreeAsyncWithCaptcha,
     addNotification,
   } = useAppStore();
+  const { executeRecaptcha, isConfigured } = useRecaptcha();
 
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showJoinInput, setShowJoinInput] = useState(false);
@@ -64,7 +67,12 @@ export function WorkspaceHeader() {
     }
     setJoinLoading(true);
     try {
-      await joinTreeAsync(code);
+      if (isConfigured) {
+        const token = await executeRecaptcha("join_tree");
+        await joinTreeAsyncWithCaptcha(code, token);
+      } else {
+        await joinTreeAsync(code);
+      }
       addNotification(
         "success",
         "Амжилттай нэгдлээ",

@@ -5,20 +5,30 @@ import { motion } from 'motion/react';
 import AuthLayout from '@/src/components/AuthLayout';
 import OTPForm from '@/src/components/forms/OTPForm';
 import { useAppStore } from '@/src/store';
+import { useRecaptcha } from '@/src/hooks/useRecaptcha';
 import { ShieldCheck } from 'lucide-react';
 
 export default function OTPVerificationPage() {
   const router = useRouter();
   const { emailSentTo, authMethod, otpCountdown, verifyOtp, resendOtp } = useAppStore();
+  const { executeRecaptcha, isConfigured } = useRecaptcha();
 
   const isEmail = authMethod === 'email';
 
-  const handleVerifyOtp = (otp: string) => {
+  const handleVerifyOtp = async (otp: string) => {
+    if (isConfigured) {
+      await executeRecaptcha('verify_otp');
+    }
     verifyOtp(emailSentTo ?? '', otp);
   };
 
-  const handleResendOtp = () => {
-    resendOtp(emailSentTo ?? '');
+  const handleResendOtp = async () => {
+    if (isConfigured) {
+      const token = await executeRecaptcha('resend_otp');
+      resendOtp(emailSentTo ?? '', token);
+    } else {
+      resendOtp(emailSentTo ?? '');
+    }
   };
 
   const handleChangeDestination = () => {

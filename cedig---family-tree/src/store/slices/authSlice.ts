@@ -64,12 +64,12 @@ export interface AuthSlice {
   logout: () => void;
   joinTree: (code: string, treeName?: string) => void;
   createTree: (name: string) => void;
-  forgotPassword: (emailOrPhone: string) => Promise<void>;
+  forgotPassword: (emailOrPhone: string, recaptchaToken?: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
   checkEmailVerified: () => Promise<boolean>;
   verifyOtp: (email: string, otp: string) => void;
   resetPassword: (email: string, password: string) => void;
-  resendOtp: (emailOrPhone: string) => void;
+  resendOtp: (emailOrPhone: string, recaptchaToken?: string) => void;
   resetAuthState: () => void;
   setAuthMethod: (method: "email" | "phone") => void;
   setAuthPhoneCountryCode: (code: string) => void;
@@ -79,12 +79,23 @@ export interface AuthSlice {
   loginWithGoogle: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
   loginWithEmailPassword: (email: string, password: string) => Promise<void>;
+  loginWithEmailPasswordAndCaptcha: (email: string, password: string, recaptchaToken: string) => Promise<void>;
   registerWithEmailPassword: (
     firstName: string,
     lastName: string,
     username: string,
     email: string,
     password: string,
+    agreeTerms?: boolean,
+    agreePrivacy?: boolean,
+  ) => Promise<void>;
+  registerWithEmailPasswordAndCaptcha: (
+    firstName: string,
+    lastName: string,
+    username: string,
+    email: string,
+    password: string,
+    recaptchaToken: string,
     agreeTerms?: boolean,
     agreePrivacy?: boolean,
   ) => Promise<void>;
@@ -108,6 +119,7 @@ export interface AuthSlice {
 
   createTreeAsync: (name: string, clanName?: string) => Promise<void>;
   joinTreeAsync: (code: string) => Promise<void>;
+  joinTreeAsyncWithCaptcha: (code: string, recaptchaToken: string) => Promise<void>;
   switchTree: (treeId: string) => void;
   loadUserTrees: () => Promise<void>;
   showCreateTreeForm: boolean;
@@ -237,14 +249,16 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
     });
   },
 
-  forgotPassword: async (emailOrPhone) => {
+  forgotPassword: async (emailOrPhone: string, _recaptchaToken?: string) => {
     set({ isLoading: true });
     try {
+      console.log('[AUTH] forgotPassword started', { emailOrPhone });
       if (emailOrPhone.includes('@')) {
         await sendResetPasswordEmail(emailOrPhone);
       } else {
         await sendResetPasswordEmail(`${emailOrPhone}@phone.cedig.mn`);
       }
+      console.log('[AUTH] forgotPassword success - Firebase email sent');
       set({
         isEmailSent: true,
         emailSentTo: emailOrPhone,
@@ -252,6 +266,7 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
         isLoading: false,
       });
     } catch (error) {
+      console.error('[AUTH] forgotPassword failed:', error);
       set({ isLoading: false });
       throw error;
     }
@@ -517,8 +532,8 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
       if (backendResult.refreshToken) {
         api.setRefreshToken(backendResult.refreshToken);
       }
-    } catch {
-        console.warn('Backend login sync skipped');
+    } catch (backendError) {
+        console.error('[AUTH] Backend login sync failed:', backendError);
       }
 
       const result = await getMe();
@@ -583,6 +598,85 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
     }
   },
 
+  loginWithEmailPasswordAndCaptcha: async (email: string, password: string, recaptchaToken: string) => {
+    set({ isLoading: true });
+    try {
+      const { user: firebaseUser, token } = await loginWithEmail(email, password);
+
+      if (!firebaseUser.emailVerified) {
+        set({
+          emailSentTo: email,
+          currentView: "verify-email",
+          isLoading: false,
+        });
+        return;
+      }
+
+      api.setToken(token);
+
+      try {
+      const backendResult = await loginWithBackend(email, password, recaptchaToken);
+      if (backendResult.refreshToken) {
+        api.setRefreshToken(backendResult.refreshToken);
+      }
+    } catch (backendError) {
+        console.error('[AUTH] Backend login sync failed (captcha):', backendError);
+      }
+
+      const result = await getMe();
+      if (result?.user) {
+        setAuthCookie();
+        const treesWithRoles = result.trees.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          code: t.code,
+          role: (t.role || 'Viewer') as TreeInfo['role'],
+        }));
+
+        const ownedTrees = treesWithRoles.filter((t) => t.role === 'Owner');
+        const sharedTrees = treesWithRoles.filter((t) => t.role !== 'Owner');
+
+        let activeTreeId: string | null = null;
+        if (ownedTrees.length > 0) {
+          activeTreeId = ownedTrees[0].id;
+        } else if (sharedTrees.length > 0) {
+          activeTreeId = sharedTrees[0].id;
+        }
+
+        const activeTree = treesWithRoles.find((t) => t.id === activeTreeId);
+
+        set({
+          user: {
+            id: result.user.id,
+            name: result.user.name,
+            email: result.user.email,
+            username: result.user.name.split(' ')[0] || 'user',
+            role: result.user.role as User['role'],
+            avatar: result.user.avatar,
+            code: result.user.code,
+          },
+          familyTreeCode: activeTree ? activeTree.code : null,
+          familyTreeId: activeTree ? activeTree.id : null,
+          familyTreeName: activeTree ? activeTree.name : null,
+          trees: treesWithRoles,
+          currentView: "workspace",
+        });
+        console.log('[AUTH] Email login complete', {
+          userId: result.user.id,
+          email: result.user.email,
+          recaptcha: true,
+        });
+      } else {
+        set({ trees: [], currentView: "workspace" });
+      }
+    } catch (error) {
+      console.error('[AUTH] Email login failed:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   registerWithEmailPassword: async (
     firstName: string,
     lastName: string,
@@ -633,18 +727,86 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
     }
   },
 
+  registerWithEmailPasswordAndCaptcha: async (
+    firstName: string,
+    lastName: string,
+    username: string,
+    email: string,
+    password: string,
+    recaptchaToken: string,
+    agreeTerms = true,
+    agreePrivacy = true,
+  ) => {
+    set({ isLoading: true });
+    try {
+      console.log('[AUTH] Starting registration flow with reCAPTCHA', { email, username });
+
+      const { user: firebaseUser, token } = await registerWithEmail(email, password);
+      api.setToken(token);
+
+      await sendVerificationEmail(firebaseUser);
+      console.log('[AUTH] Verification email sent', { email });
+
+      console.log('[AUTH] Firebase auth created, registering with backend');
+
+      const backendResult = await registerWithBackend({
+        firstName,
+        lastName,
+        username,
+        email,
+        password,
+        agreeTerms,
+        agreePrivacy,
+      }, recaptchaToken);
+
+      api.setRefreshToken(backendResult.refreshToken);
+
+      console.log('[AUTH] Registration complete - waiting for email verification', {
+        userId: backendResult.user.id,
+        treeCode: backendResult.familyTree?.code,
+        recaptcha: true,
+      });
+
+      set({
+        emailSentTo: email,
+        currentView: "verify-email",
+      });
+    } catch (error) {
+      console.error('[AUTH] Email registration failed:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   startPhoneVerification: async (phone: string, countryCode: string) => {
+    // Prevent concurrent verification flows which cause "already been rendered" errors
+    const lock = (window as any).__recaptchaVerifyingLock;
+    if (lock) {
+      throw new Error("Verification already in progress. Please wait.");
+    }
+    (window as any).__recaptchaVerifyingLock = true;
+
     set({ isLoading: true });
     try {
       const { auth, RecaptchaVerifier, signInWithPhoneNumber } = await import("@/src/lib/firebase");
 
+      // Destroy any existing verifier and ensure the container DOM is clean
       const existingVerifier = (window as any).__recaptchaVerifier;
       if (existingVerifier) {
-        existingVerifier.clear();
+        try { existingVerifier.clear(); } catch { /* ignore */ }
+        delete (window as any).__recaptchaVerifier;
       }
 
-      const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
+      // Manually clear the container element to prevent "already been rendered" errors
+      // when Firebase's grecaptcha.render() is called on an occupied element
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        container.innerHTML = '';
+      }
+
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
       });
       (window as any).__recaptchaVerifier = verifier;
 
@@ -659,6 +821,8 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
     } catch (error) {
       set({ isLoading: false, phoneVerificationSent: false, phoneConfirmationResult: null });
       throw error;
+    } finally {
+      delete (window as any).__recaptchaVerifyingLock;
     }
   },
 
@@ -685,8 +849,13 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
   clearPhoneVerification: () => {
     const verifier = (window as any).__recaptchaVerifier;
     if (verifier) {
-      verifier.clear();
+      try { verifier.clear(); } catch { /* ignore */ }
       delete (window as any).__recaptchaVerifier;
+    }
+    // Clean the container DOM to prevent "already been rendered" on next use
+    const container = document.getElementById('recaptcha-container');
+    if (container) {
+      container.innerHTML = '';
     }
     set({
       phoneConfirmationResult: null,
@@ -789,8 +958,12 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
 
       const verifier = (window as any).__recaptchaVerifier;
       if (verifier) {
-        verifier.clear();
+        try { verifier.clear(); } catch { /* ignore */ }
         delete (window as any).__recaptchaVerifier;
+      }
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        container.innerHTML = '';
       }
 
       console.log('[AUTH] Phone registration complete', {
@@ -909,12 +1082,30 @@ export const createAuthSlice: StateCreator<AuthSlice, [], [], AuthSlice> = (set,
         currentView: "workspace",
         activeWorkspaceTab: "tree",
       });
-      // If join resulted in immediate membership (e.g. accepting invite),
-      // reload trees to pick up the new tree
       if (result && (result as any).treeId) {
         get().loadUserTrees();
       }
       console.log('[AUTH] Join request submitted', { code, result });
+    } catch (error) {
+      console.error('Failed to join tree:', error);
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  joinTreeAsyncWithCaptcha: async (code: string, recaptchaToken: string) => {
+    set({ isLoading: true });
+    try {
+      const result = await apiJoinTree(code, recaptchaToken);
+      set({
+        currentView: "workspace",
+        activeWorkspaceTab: "tree",
+      });
+      if (result && (result as any).treeId) {
+        get().loadUserTrees();
+      }
+      console.log('[AUTH] Join request submitted with reCAPTCHA', { code, result });
     } catch (error) {
       console.error('Failed to join tree:', error);
       throw error;

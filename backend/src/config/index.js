@@ -32,6 +32,10 @@ export default {
     pass: process.env.SMTP_PASS || '',
   },
   emailFrom: process.env.EMAIL_FROM || 'noreply@cedig.mn',
+  recaptcha: {
+    secretKey: process.env.RECAPTCHA_SECRET_KEY,
+    scoreThreshold: parseFloat(process.env.RECAPTCHA_SCORE_THRESHOLD || '0.5'),
+  },
   appUrl: process.env.APP_URL || 'http://localhost:3000',
   apiUrl: process.env.API_URL || 'http://localhost:4000',
 };

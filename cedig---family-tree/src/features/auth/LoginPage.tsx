@@ -7,16 +7,23 @@ import { Trees, Archive, Image, Users } from "lucide-react";
 import AuthLayout from "@/src/components/AuthLayout";
 import LoginForm from "./LoginForm";
 import { useAppStore } from "@/src/store";
+import { useRecaptcha } from "@/src/hooks/useRecaptcha";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { loginWithEmailPassword, loginWithGoogle, loginWithFacebook, addNotification } = useAppStore();
+  const { loginWithEmailPassword, loginWithEmailPasswordAndCaptcha, loginWithGoogle, loginWithFacebook, addNotification } = useAppStore();
+  const { executeRecaptcha, isVerifying, isConfigured } = useRecaptcha();
   const [error, setError] = useState<string | null>(null);
 
   const handleEmailLogin = async (data: { email: string; password: string }) => {
     setError(null);
     try {
-      await loginWithEmailPassword(data.email, data.password);
+      if (isConfigured) {
+        const token = await executeRecaptcha("login");
+        await loginWithEmailPasswordAndCaptcha(data.email, data.password, token);
+      } else {
+        await loginWithEmailPassword(data.email, data.password);
+      }
       router.replace("/family-tree");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Нэвтрэхэд алдаа гарлаа";
@@ -28,7 +35,12 @@ export default function LoginPage() {
   const handlePhoneLogin = async (data: { phone: string; countryCode: string; password: string }) => {
     setError(null);
     try {
-      await loginWithEmailPassword(`${data.countryCode}${data.phone}`, data.password);
+      if (isConfigured) {
+        const token = await executeRecaptcha("login");
+        await loginWithEmailPasswordAndCaptcha(`${data.countryCode}${data.phone}`, data.password, token);
+      } else {
+        await loginWithEmailPassword(`${data.countryCode}${data.phone}`, data.password);
+      }
       router.replace("/family-tree");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Нэвтрэхэд алдаа гарлаа";
@@ -120,6 +132,7 @@ export default function LoginPage() {
             onRegister={() => router.push("/register")}
             onGoogleLogin={handleGoogleLogin}
             onFacebookLogin={handleFacebookLogin}
+            isSubmitting={isVerifying}
           />
         </div>
       }

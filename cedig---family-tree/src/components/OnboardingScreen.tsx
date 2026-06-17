@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useAppStore } from "@/lib/store";
+import { useRecaptcha } from "@/src/hooks/useRecaptcha";
 import {
   PlusCircle,
   Users,
@@ -20,10 +21,12 @@ export default function OnboardingScreen() {
     joinTree,
     createTreeAsync,
     joinTreeAsync,
+    joinTreeAsyncWithCaptcha,
     logout,
     user,
     trees,
   } = useAppStore();
+  const { executeRecaptcha, isConfigured } = useRecaptcha();
 
   const hasTree = trees.filter((t: any) => t.role === 'Owner').length > 0;
 
@@ -85,7 +88,12 @@ export default function OnboardingScreen() {
     setErrorMsg(null);
 
     try {
-      await joinTreeAsync(joinCode.toUpperCase());
+      if (isConfigured) {
+        const token = await executeRecaptcha("join_tree");
+        await joinTreeAsyncWithCaptcha(joinCode.toUpperCase(), token);
+      } else {
+        await joinTreeAsync(joinCode.toUpperCase());
+      }
       setSuccessMsg("Хүсэлт илгээгдлээ. Ургийн модны эзэмшигч таны хүсэлтийг баталгаажуулсны дараа та нэвтрэх боломжтой.");
       setTimeout(() => {
         router.push("/family-tree");

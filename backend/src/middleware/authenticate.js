@@ -28,6 +28,16 @@ export async function authenticate(req, res, next) {
 
     let user = await userRepository.findByFirebaseUid(uid);
 
+    if (!user && email) {
+      // Backend-registered users may not have a firebaseUid yet.
+      // Find by email (case-insensitive) and link the Firebase UID.
+      user = await userRepository.findByEmail(email.toLowerCase().trim());
+      if (user) {
+        console.log('[AUTH] Linking firebaseUid to existing user', { userId: user.id, email });
+        await userRepository.update(user.id, { firebaseUid: uid });
+      }
+    }
+
     if (!user) {
       user = await userRepository.createFromFirebase({
         firebaseUid: uid,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useAppStore } from "@/src/store";
@@ -40,6 +40,23 @@ function parseName(fullName: string): { firstName: string; lastName: string } {
 
 export function SettingsView() {
   const router = useRouter();
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+
+  // Clean up Firebase reCAPTCHA verifier when leaving Settings page
+  useEffect(() => {
+    return () => {
+      const verifier = (window as any).__recaptchaVerifier;
+      if (verifier) {
+        try { verifier.clear(); } catch { /* ignore */ }
+        delete (window as any).__recaptchaVerifier;
+      }
+      delete (window as any).__recaptchaVerifyingLock;
+      if (recaptchaContainerRef.current) {
+        recaptchaContainerRef.current.innerHTML = '';
+      }
+    };
+  }, []);
+
   const {
     user,
     logout,
@@ -568,7 +585,7 @@ export function SettingsView() {
           )}
         </div>
       </div>
-      <div id="recaptcha-container" />
+      <div id="recaptcha-container" ref={recaptchaContainerRef} />
     </div>
   );
 }
