@@ -22,7 +22,6 @@ export function AuthRestorer() {
         const firebaseUser = await waitForAuthReady();
 
         if (!firebaseUser) {
-          console.log("[AUTH] No Firebase user, skipping restore");
           setReady(true);
           return;
         }
@@ -48,7 +47,7 @@ export function AuthRestorer() {
           }
         }
 
-        console.log("[AUTH] Fresh token stored, restoring session...");
+        
 
         await loadUserData();
       } catch (err) {

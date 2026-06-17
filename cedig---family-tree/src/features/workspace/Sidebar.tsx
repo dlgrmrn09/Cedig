@@ -46,7 +46,6 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    console.log("[AUTH] Redirecting to login");
     router.push("/login");
   };
 

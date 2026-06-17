@@ -140,7 +140,8 @@ export function ActivityTimeline() {
   const hasActiveFilters =
     typeFilter !== "" ||
     datePreset !== "" ||
-    ((datePreset as string) === "custom" && (customFrom !== "" || customTo !== ""));
+    ((datePreset as string) === "custom" &&
+      (customFrom !== "" || customTo !== ""));
 
   const handleClearFilters = useCallback(() => {
     setTypeFilter("");
@@ -179,7 +180,6 @@ export function ActivityTimeline() {
         if (cancelled) return;
         setActivities(result.activities);
         setTotal(result.total);
-        console.log("Fetched activities:", result);
       })
       .catch(() => {
         if (cancelled) return;
@@ -202,14 +202,6 @@ export function ActivityTimeline() {
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  console.log({
-    activities,
-    total,
-    page,
-    debouncedSearch,
-    typeFilter,
-    dateRange,
-  });
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl border border-bronze/20 shadow-xl space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-stone-100 pb-4">

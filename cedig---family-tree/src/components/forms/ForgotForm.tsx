@@ -45,7 +45,7 @@ export default function ForgotForm({ onSubmit, onBack, isSubmitting = false, err
     if (onErrorClear) onErrorClear();
     setLoading(true);
     try {
-      console.log('[FORGOT FORM] Email submit', { email: data.email });
+
       await onSubmit(data.email);
     } finally {
       setLoading(false);
@@ -56,7 +56,6 @@ export default function ForgotForm({ onSubmit, onBack, isSubmitting = false, err
     if (onErrorClear) onErrorClear();
     setLoading(true);
     try {
-      console.log('[FORGOT FORM] Phone submit', { phone: data.phone, countryCode: data.countryCode });
       await onSubmit(`${data.countryCode}${data.phone}`);
     } finally {
       setLoading(false);

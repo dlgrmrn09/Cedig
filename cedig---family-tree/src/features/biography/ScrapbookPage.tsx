@@ -18,9 +18,6 @@ export default function ScrapbookPage({
   onUploadPhoto,
   canDelete,
 }: ScrapbookPageProps) {
-  console.log("scrapbookPics", scrapbookPics);
-  console.log("length", scrapbookPics?.length);
-
   return (
     <div
       className="shastir-page select-none h-full bg-[#FAF6EE]"

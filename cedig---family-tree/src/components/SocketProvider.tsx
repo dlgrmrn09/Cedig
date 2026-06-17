@@ -30,7 +30,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
           socketInstance.connect();
         } else {
           const url = getSocketUrl();
-          console.log("[SOCKET] Connecting to:", url);
 
           socketInstance = io(url, {
             auth: { token },
@@ -45,12 +44,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
         socketInstance.on("connect", () => {
           if (!mountedRef.current) return;
-          console.log("[SOCKET] Connected:", socketInstance?.id);
         });
 
         socketInstance.on("disconnect", (reason) => {
           if (!mountedRef.current) return;
-          console.log("[SOCKET] Disconnected:", reason);
         });
 
         socketInstance.on("connect_error", (err) => {

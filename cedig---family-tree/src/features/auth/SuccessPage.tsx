@@ -171,7 +171,6 @@ export default function SuccessPage() {
             <motion.button
               onClick={() => {
                 completeAuthFlow();
-                console.log('[SUCCESS] Auth flow complete, redirecting to /family-tree');
                 router.replace("/family-tree");
               }}
               whileHover={{ scale: 1.02 }}

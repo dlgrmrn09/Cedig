@@ -33,7 +33,7 @@ const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
-console.log(firebaseConfig);
+
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
@@ -55,7 +55,7 @@ export async function handleRedirectResult() {
   try {
     const result = await getRedirectResult(auth);
     if (result) {
-      console.log('[FIREBASE] Redirect sign-in successful', { uid: result.user.uid });
+
       return result;
     }
     return null;
@@ -135,7 +135,6 @@ export async function getFreshToken(): Promise<string | null> {
 
   try {
     const token = await user.getIdToken(true);
-    console.log('[FIREBASE] Fresh token obtained');
     return token;
   } catch (err) {
     console.error('[FIREBASE] Failed to refresh token:', err);
@@ -169,7 +168,6 @@ export async function waitForAuthReady(): Promise<FirebaseUser | null> {
   return new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe();
-      console.log('[FIREBASE] Auth ready', { uid: user?.uid, email: user?.email });
       resolve(user);
     });
   });

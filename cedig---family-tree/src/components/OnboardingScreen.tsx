@@ -28,11 +28,10 @@ export default function OnboardingScreen() {
   } = useAppStore();
   const { executeRecaptcha, isConfigured } = useRecaptcha();
 
-  const hasTree = trees.filter((t: any) => t.role === 'Owner').length > 0;
+  const hasTree = trees.filter((t: any) => t.role === "Owner").length > 0;
 
   const handleLogout = () => {
     logout();
-    console.log("[AUTH] Redirecting to login");
     router.push("/login");
   };
   const [mode, setMode] = useState<"select" | "create" | "join">("select");
@@ -94,7 +93,9 @@ export default function OnboardingScreen() {
       } else {
         await joinTreeAsync(joinCode.toUpperCase());
       }
-      setSuccessMsg("Хүсэлт илгээгдлээ. Ургийн модны эзэмшигч таны хүсэлтийг баталгаажуулсны дараа та нэвтрэх боломжтой.");
+      setSuccessMsg(
+        "Хүсэлт илгээгдлээ. Ургийн модны эзэмшигч таны хүсэлтийг баталгаажуулсны дараа та нэвтрэх боломжтой.",
+      );
       setTimeout(() => {
         router.push("/family-tree");
       }, 2000);

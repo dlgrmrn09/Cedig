@@ -16,19 +16,19 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (contact: string) => {
-    console.log('[FORGOT PASSWORD] Form submitted', { contact, isConfigured });
+
     setError(null);
 
     try {
       let token: string | undefined;
       if (isConfigured) {
-        console.log('[FORGOT PASSWORD] Executing reCAPTCHA...');
+
         token = await executeRecaptcha("forgot_password");
-        console.log('[FORGOT PASSWORD] reCAPTCHA token obtained');
+  
       }
-      console.log('[FORGOT PASSWORD] Calling store.forgotPassword...');
+  
       await forgotPassword(contact, token);
-      console.log('[FORGOT PASSWORD] forgotPassword resolved successfully');
+
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Нууц үг сэргээхэд алдаа гарлаа";
       console.error('[FORGOT PASSWORD] Error caught:', msg, err);

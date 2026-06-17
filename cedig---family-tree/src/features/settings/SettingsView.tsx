@@ -47,12 +47,16 @@ export function SettingsView() {
     return () => {
       const verifier = (window as any).__recaptchaVerifier;
       if (verifier) {
-        try { verifier.clear(); } catch { /* ignore */ }
+        try {
+          verifier.clear();
+        } catch {
+          /* ignore */
+        }
         delete (window as any).__recaptchaVerifier;
       }
       delete (window as any).__recaptchaVerifyingLock;
       if (recaptchaContainerRef.current) {
-        recaptchaContainerRef.current.innerHTML = '';
+        recaptchaContainerRef.current.innerHTML = "";
       }
     };
   }, []);
@@ -76,7 +80,6 @@ export function SettingsView() {
 
   const handleLogout = () => {
     logout();
-    console.log("[AUTH] Redirecting to login");
     router.push("/login");
   };
 
@@ -93,20 +96,30 @@ export function SettingsView() {
   const [deleteInput, setDeleteInput] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [phoneOtp, setPhoneOtp] = useState("");
-  const [pendingPhoneData, setPendingPhoneData] = useState<{ phone: string; countryCode: string } | null>(null);
+  const [pendingPhoneData, setPendingPhoneData] = useState<{
+    phone: string;
+    countryCode: string;
+  } | null>(null);
 
   const handleConfirmPhoneOtp = async () => {
     try {
       await confirmPhoneOtp(phoneOtp);
       if (pendingPhoneData) {
         await updatePhone(pendingPhoneData.phone, pendingPhoneData.countryCode);
-        addNotification("success", "Утасны дугаар баталгаажлаа", `${pendingPhoneData.countryCode} ${pendingPhoneData.phone}`);
+        addNotification(
+          "success",
+          "Утасны дугаар баталгаажлаа",
+          `${pendingPhoneData.countryCode} ${pendingPhoneData.phone}`,
+        );
       }
       setPendingPhoneData(null);
       setPhoneOtp("");
       clearPhoneVerification();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "OTP баталгаажуулахад алдаа гарлаа";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "OTP баталгаажуулахад алдаа гарлаа";
       addNotification("warn", "Алдаа", msg);
     }
   };
@@ -155,7 +168,11 @@ export function SettingsView() {
     try {
       await changeEmailWithVerification(data.email);
       await updateEmail(data.email);
-      addNotification("success", "Баталгаажуулах и-мэйл илгээгдлээ", `${data.email} хаягруу баталгаажуулах холбоос илгээлээ.`);
+      addNotification(
+        "success",
+        "Баталгаажуулах и-мэйл илгээгдлээ",
+        `${data.email} хаягруу баталгаажуулах холбоос илгээлээ.`,
+      );
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "И-мэйл хадгалахад алдаа гарлаа";
@@ -310,9 +327,12 @@ export function SettingsView() {
                   animate={{ opacity: 1, x: 0 }}
                   className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 space-y-4"
                 >
-                  <h3 className="font-display font-bold text-lg text-ink">Утас баталгаажуулах</h3>
+                  <h3 className="font-display font-bold text-lg text-ink">
+                    Утас баталгаажуулах
+                  </h3>
                   <p className="text-sm text-stone-500">
-                    {pendingPhoneData.countryCode} {pendingPhoneData.phone} дугаарт илгээсэн SMS кодыг оруулна уу.
+                    {pendingPhoneData.countryCode} {pendingPhoneData.phone}{" "}
+                    дугаарт илгээсэн SMS кодыг оруулна уу.
                   </p>
                   <input
                     type="text"
@@ -320,7 +340,11 @@ export function SettingsView() {
                     maxLength={6}
                     placeholder="6 оронтой код"
                     value={phoneOtp}
-                    onChange={(e) => setPhoneOtp(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                    onChange={(e) =>
+                      setPhoneOtp(
+                        e.target.value.replace(/[^0-9]/g, "").slice(0, 6),
+                      )
+                    }
                     className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3.5 text-sm text-ink text-center tracking-[0.5em] placeholder:tracking-normal placeholder:text-stone-400 focus:outline-none focus:border-pine focus:ring-2 focus:ring-pine/15 transition-all"
                   />
                   <div className="flex gap-3">
@@ -332,7 +356,11 @@ export function SettingsView() {
                       {isLoading ? "Шалгаж байна..." : "Баталгаажуулах"}
                     </button>
                     <button
-                      onClick={() => { clearPhoneVerification(); setPendingPhoneData(null); setPhoneOtp(""); }}
+                      onClick={() => {
+                        clearPhoneVerification();
+                        setPendingPhoneData(null);
+                        setPhoneOtp("");
+                      }}
                       className="flex-1 border border-stone-200 text-stone-600 py-3 rounded-xl font-semibold text-sm hover:bg-stone-50 cursor-pointer"
                     >
                       Буцах

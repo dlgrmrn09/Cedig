@@ -299,7 +299,7 @@ export default function AddPersonModal() {
             formData,
           );
           avatarUrl = uploadResult.url;
-          console.log("[UPLOAD] Avatar uploaded", { url: avatarUrl });
+          
         } catch (uploadErr) {
           console.error("[UPLOAD] Avatar upload failed:", uploadErr);
           addNotification(
