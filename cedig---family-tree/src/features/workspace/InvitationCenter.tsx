@@ -210,7 +210,7 @@ export function InvitationCenter() {
           <div className="min-w-0 flex-grow">
             <p className="text-sm font-bold text-ink">{inv.treeName}</p>
             {isAccepted ? (
-              <p className="text-xs text-emerald-600 font-medium mt-1">Та "{inv.treeName}" ургийн модонд нэвтрэх боломжтой боллоо.</p>
+              <p className="text-xs text-emerald-600 font-medium mt-1">Та &ldquo;{inv.treeName}&rdquo; ургийн модонд нэвтрэх боломжтой боллоо.</p>
             ) : isError ? (
               <p className="text-xs text-red-600 mt-1">{inv._errorMsg || "Алдаа гарлаа. Дахин оролдоно уу."}</p>
             ) : (

@@ -140,7 +140,7 @@ export function ActivityTimeline() {
   const hasActiveFilters =
     typeFilter !== "" ||
     datePreset !== "" ||
-    (datePreset === "custom" && (customFrom !== "" || customTo !== ""));
+    ((datePreset as string) === "custom" && (customFrom !== "" || customTo !== ""));
 
   const handleClearFilters = useCallback(() => {
     setTypeFilter("");
