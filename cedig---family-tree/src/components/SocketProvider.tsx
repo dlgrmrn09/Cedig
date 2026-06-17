@@ -46,7 +46,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
           if (!mountedRef.current) return;
         });
 
-        socketInstance.on("disconnect", (reason) => {
+        socketInstance.on("disconnect", (_reason) => {
           if (!mountedRef.current) return;
         });
 
