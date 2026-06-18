@@ -8,6 +8,7 @@ import type { PersonFormData } from "@/src/types/personFormData";
 import { personToFormData } from "@/src/types/personFormData";
 import { PERSON_FIELDS } from "@/src/config/personFields";
 import type { PersonFieldConfig } from "@/src/config/personFields";
+import VoiceRecorder from "@/src/components/VoiceRecorder";
 
 interface EditPersonModalProps {
   open: boolean;
@@ -37,6 +38,16 @@ function FormField({
           className={`${baseClass} h-24 font-sans resize-none`}
           placeholder={field.placeholder}
         />
+        {field.key === "biography" && (
+          <div className="flex justify-end">
+            <VoiceRecorder
+              onTranscript={(text) => {
+                const current = typeof value === "string" ? value : "";
+                onChange(current + (current ? " " : "") + text);
+              }}
+            />
+          </div>
+        )}
       </div>
     );
   }

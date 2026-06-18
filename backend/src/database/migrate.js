@@ -39,7 +39,7 @@ const migrations = [
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     description TEXT,
     clan_name VARCHAR(100),
-    privacy_setting VARCHAR(20) DEFAULT 'invite_only',
+    privacy_setting VARCHAR(20) DEFAULT 'private',
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

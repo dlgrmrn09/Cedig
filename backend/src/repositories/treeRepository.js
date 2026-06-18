@@ -32,6 +32,7 @@ export async function create({ name, code, ownerId, clanName, description }) {
       ownerId,
       clanName: clanName || null,
       description: description || null,
+      privacySetting: 'private',
     },
   });
 }

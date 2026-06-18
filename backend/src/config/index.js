@@ -38,4 +38,8 @@ export default {
   },
   appUrl: process.env.APP_URL || 'http://localhost:3000',
   apiUrl: process.env.API_URL || 'http://localhost:4000',
+  chimege: {
+    apiToken: process.env.CHIMEGE_API_TOKEN || '',
+    apiUrl: process.env.CHIMEGE_API_URL || 'https://api.chimege.com/v1.2/transcribe',
+  },
 };

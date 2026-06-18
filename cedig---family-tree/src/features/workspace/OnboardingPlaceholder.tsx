@@ -10,7 +10,6 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
-  FolderLock,
   TreePine,
 } from "lucide-react";
 
@@ -245,17 +244,9 @@ export default function OndoardingPlaceholder({ hasAnyTree }: { hasAnyTree: bool
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold tracking-wider uppercase text-ink/60">
-              Нууцлалын тохиргоо
-            </label>
-            <div className="flex bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs">
-              <span className="flex-grow text-center bg-white py-2 rounded-lg font-bold text-ink shadow-sm flex items-center justify-center gap-1">
-                <FolderLock className="w-3.5 h-3.5 text-bronze" /> Зөвхөн
-                урилгаар
-              </span>
-            </div>
-          </div>
+          <p className="text-xs text-ink/50 italic">
+            All family trees are private by default.
+          </p>
 
           <button
             type="submit"

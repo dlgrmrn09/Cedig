@@ -50,7 +50,7 @@ model FamilyTree {
   ownerId         String   @unique @map("owner_id") @db.Uuid
   description     String?  @db.Text
   clanName        String?  @map("clan_name") @db.VarChar(100)
-  privacySetting  String   @default("invite_only") @map("privacy_setting") @db.VarChar(20)
+  privacySetting  String   @default("private") @map("privacy_setting") @db.VarChar(20)
   isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
