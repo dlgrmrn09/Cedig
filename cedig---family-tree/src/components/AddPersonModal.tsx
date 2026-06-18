@@ -8,7 +8,7 @@ import { PERSON_FIELDS } from "@/src/config/personFields";
 import type { PersonFieldConfig } from "@/src/config/personFields";
 import type { PersonFormData } from "@/src/types/personFormData";
 import { api } from "@/src/lib/api";
-import VoiceRecorder from "@/src/components/VoiceRecorder";
+import VoiceHoldButton from "@/src/components/VoiceHoldButton";
 import Image from "next/image";
 const FORM_FIELDS = PERSON_FIELDS.filter((f) => f.key !== "awards");
 
@@ -63,7 +63,7 @@ function FormField({
         />
         {field.key === "biography" && (
           <div className="flex justify-end">
-            <VoiceRecorder
+            <VoiceHoldButton
               onTranscript={(text) => {
                 const current = typeof value === "string" ? value : "";
                 onChange(current + (current ? " " : "") + text);
