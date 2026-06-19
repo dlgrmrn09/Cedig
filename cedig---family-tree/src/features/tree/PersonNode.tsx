@@ -99,7 +99,7 @@ function PersonNodeInner({ data }: { data: PersonNodeData }) {
       <motion.div
         variants={nodeVariants}
         initial="initial"
-        animate={{
+        animate={isHighlighted ? {
           scale: 1,
           opacity: 1,
           filter: "blur(0px)",
@@ -115,6 +115,16 @@ function PersonNodeInner({ data }: { data: PersonNodeData }) {
               duration: 3,
               ease: "easeInOut" as const,
             },
+          },
+        } : {
+          scale: 1,
+          opacity: 1,
+          filter: "blur(0px)",
+          transition: {
+            type: "spring" as const,
+            stiffness: 200,
+            damping: 16,
+            mass: 0.6,
           },
         }}
         exit="exit"
@@ -162,6 +172,8 @@ function PersonNodeInner({ data }: { data: PersonNodeData }) {
               <Image
                 src={p.avatarUrl}
                 alt={`${p.firstName} ${p.lastName}`}
+                width={104}
+                height={104}
                 className="w-full h-full rounded-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
@@ -245,16 +257,18 @@ function PersonNodeInner({ data }: { data: PersonNodeData }) {
             className="text-[10px] font-semibold tracking-tight truncate"
             style={{ color: "#2B2B2B" }}
           >
-            {p.firstName}
+            {p.firstName} {p.lastName}
           </p>
-          {p.clanName && (
-            <p
-              className="text-[8px] font-medium tracking-wide truncate"
-              style={{ color: "rgba(0,0,0,0.4)" }}
-            >
-              {p.clanName}
-            </p>
-          )}
+          <p
+            className="text-[8px] font-medium tracking-wide truncate"
+            style={{ color: "rgba(0,0,0,0.4)" }}
+          >
+            {p.birthYear
+              ? `b. ${p.birthYear}`
+              : p.birthDate
+                ? p.birthDate
+                : "—"}
+          </p>
         </div>
       </motion.div>
 

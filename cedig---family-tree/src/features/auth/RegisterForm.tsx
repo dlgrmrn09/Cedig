@@ -110,7 +110,6 @@ export default function RegisterForm({
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<
     "google" | "facebook" | null
   >(null);
@@ -196,28 +195,17 @@ export default function RegisterForm({
             : "text-green-600";
 
   const handleEmailSubmit = (data: EmailRegisterData) => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onEmailRegister(data);
-    }, 1200);
+    onEmailRegister(data);
   };
 
   const handlePhoneSubmit = (data: PhoneRegisterData) => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onPhoneRegister(data);
-    }, 1200);
+    onPhoneRegister(data);
   };
 
   const handleSocial = (provider: "google" | "facebook") => {
     setSocialLoading(provider);
-    setTimeout(() => {
-      setSocialLoading(null);
-      if (provider === "google") onGoogleRegister();
-      else onFacebookRegister();
-    }, 1000);
+    if (provider === "google") onGoogleRegister();
+    else onFacebookRegister();
   };
 
   const inputClasses =
@@ -463,12 +451,12 @@ export default function RegisterForm({
           </div>
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:bg-pine/90 active:bg-pine/80 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Бүртгэл үүсгэх
           </motion.button>
         </form>
@@ -620,12 +608,12 @@ export default function RegisterForm({
           </div>
           <motion.button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:bg-pine/90 active:bg-pine/80 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Бүртгэл үүсгэх
           </motion.button>
         </form>

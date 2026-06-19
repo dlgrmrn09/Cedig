@@ -32,7 +32,7 @@ export default function BackCover() {
         </div>
 
         <div className="text-stone-400/50 text-[8px] tracking-wider uppercase font-black">
-          Цахим Ураг Судар • Cedig Lineage System • 2026
+          Цахим Ураг Судар • Cedig Lineage System • {new Date().getFullYear()}
         </div>
       </div>
     </div>

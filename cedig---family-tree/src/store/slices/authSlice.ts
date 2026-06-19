@@ -7,7 +7,7 @@ import { api } from "@/src/lib/api";
 
 function setAuthCookie() {
   if (typeof document !== "undefined") {
-    document.cookie = "cedig-auth=1; path=/; max-age=86400; SameSite=Lax";
+    document.cookie = "cedig-auth=1; path=/; max-age=86400; SameSite=Lax; Secure";
   }
 }
 

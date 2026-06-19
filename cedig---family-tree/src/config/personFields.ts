@@ -35,13 +35,6 @@ export const PERSON_FIELDS: PersonFieldConfig[] = [
     section: "personal",
   },
   {
-    key: "surname",
-    label: "Эцгийн нэр",
-    type: "text",
-    placeholder: "---",
-    section: "personal",
-  },
-  {
     key: "clanName",
     label: "Ургийн овог",
     type: "text",

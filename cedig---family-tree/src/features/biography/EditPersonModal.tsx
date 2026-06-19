@@ -1,187 +1,104 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 import type { Person } from "@/src/types/person";
-import type { PersonFormData } from "@/src/types/personFormData";
 import { personToFormData } from "@/src/types/personFormData";
-import { PERSON_FIELDS } from "@/src/config/personFields";
-import type { PersonFieldConfig } from "@/src/config/personFields";
-import VoiceHoldButton from "@/src/components/VoiceHoldButton";
+import PersonForm, {
+  type PersonFormData,
+  type AvatarState,
+} from "@/src/components/PersonForm";
 
 interface EditPersonModalProps {
   open: boolean;
   onClose: () => void;
   person: Person;
-  onSave: (id: string, data: Partial<Person>) => void;
+  onSave: (id: string, data: Partial<Person>) => Promise<void>;
 }
 
-function FormField({
-  field,
-  value,
-  onChange,
-}: {
-  field: PersonFieldConfig;
-  value: string | number | undefined;
-  onChange: (val: string | number | undefined) => void;
-}) {
-  const baseClass = "w-full bg-white border border-stone-300 rounded p-2 text-stone-900";
-
-  if (field.type === "textarea") {
-    return (
-      <div className="space-y-1 sm:col-span-2">
-        <label className="text-stone-500 block uppercase text-[10px]">{field.label}</label>
-        <textarea
-          value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-          className={`${baseClass} h-24 font-sans resize-none`}
-          placeholder={field.placeholder}
-        />
-        {field.key === "biography" && (
-          <div className="flex justify-end">
-            <VoiceHoldButton
-              onTranscript={(text) => {
-                const current = typeof value === "string" ? value : "";
-                onChange(current + (current ? " " : "") + text);
-              }}
-            />
-          </div>
-        )}
-      </div>
-    );
+function formDataToPersonUpdates(form: PersonFormData): Partial<Person> {
+  const updates: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(form)) {
+    if (value === undefined || value === null || value === "") continue;
+    updates[key] = value;
   }
-
-  if (field.key === "gender") {
-    return (
-      <div className="space-y-1">
-        <label className="text-stone-500 block uppercase text-[10px]">Хүйс</label>
-        <div className="flex bg-stone-100 p-1 rounded-xl border border-stone-200 gap-1">
-          <button
-            type="button"
-            onClick={() => onChange("male")}
-            className={`flex-grow text-center py-2 rounded-lg font-bold text-xs ${value === "male" ? "bg-pine text-white" : "text-ink/70"}`}
-          >
-            Эрэгтэй
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange("female")}
-            className={`flex-grow text-center py-2 rounded-lg font-bold text-xs ${value === "female" ? "bg-pine text-white" : "text-ink/70"}`}
-          >
-            Эмэгтэй
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-1">
-      <label className="text-stone-500 block uppercase text-[10px]">{field.label}</label>
-      <input
-        type={field.type === "number" ? "number" : "text"}
-        required={field.required}
-        placeholder={field.placeholder}
-        min={field.type === "number" ? 1800 : undefined}
-        max={field.type === "number" ? 2100 : undefined}
-        value={value ?? ""}
-        onChange={(e) => {
-          if (field.type === "number") {
-            onChange(parseInt(e.target.value) || 0);
-          } else {
-            onChange(e.target.value);
-          }
-        }}
-        className={baseClass}
-      />
-    </div>
-  );
+  return updates as Partial<Person>;
 }
 
-function fieldRows(fields: PersonFieldConfig[]): PersonFieldConfig[][] {
-  const rows: PersonFieldConfig[][] = [];
-  let i = 0;
-  while (i < fields.length) {
-    const field = fields[i];
-    if (field.type === "textarea") {
-      rows.push([field]);
-      i++;
-    } else if (i + 1 < fields.length && fields[i + 1].type !== "textarea") {
-      rows.push([fields[i], fields[i + 1]]);
-      i += 2;
-    } else {
-      rows.push([fields[i]]);
-      i++;
+export default function EditPersonModal({
+  open,
+  onClose,
+  person,
+  onSave,
+}: EditPersonModalProps) {
+  const handleSubmit = async (
+    formData: PersonFormData,
+    avatar: AvatarState,
+  ) => {
+    if (!formData.firstName?.trim() || !formData.lastName?.trim()) return;
+
+    const updates = formDataToPersonUpdates(formData);
+
+    // Handle avatar changes
+    if (avatar.action === "remove") {
+      updates.avatarUrl = undefined;
+      (updates as Record<string, unknown>).avatarUrl = null;
+    } else if (avatar.action === "change") {
+      // URL was set in PersonForm via upload
+      const url = (formData as unknown as Record<string, unknown>).avatarUrl;
+      if (url) updates.avatarUrl = url as string;
     }
-  }
-  return rows;
-}
+    // "none" = no change — don't include avatarUrl in updates
 
-const EDIT_FIELDS = PERSON_FIELDS.filter(
-  (f) => f.key !== "awards"
-);
-
-export default function EditPersonModal({ open, onClose, person, onSave }: EditPersonModalProps) {
-  const [form, setForm] = useState<PersonFormData>(() => personToFormData(person));
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.firstName?.trim() || !form.lastName?.trim()) return;
-    onSave(person.id, form as unknown as Partial<Person>);
-    onClose();
+    await onSave(person.id, updates as Partial<Person>);
   };
-
-  const handleChange = (key: keyof PersonFormData, val: string | number | undefined) => {
-    setForm((prev) => ({ ...prev, [key]: val }));
-  };
-
-  const rows = fieldRows(EDIT_FIELDS);
 
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+        >
           <motion.div
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0.95 }}
-            className="bg-[#FAF6EE] max-w-lg w-full p-5 md:p-6 rounded-xl border-4 border-[#32231A] shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            initial={{ scale: 0.96, opacity: 0, y: 8 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.96, opacity: 0, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-stone-200/80 overflow-hidden flex flex-col"
+            key={person.id}
           >
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-stone-600 hover:text-black"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-semibold">
-              <h3 className="font-serif italic font-bold text-lg text-[#32231A] border-b border-[#735c00]/20 pb-1.5">
-                📝 Түүхэн өв, намтарыг засварлах
-              </h3>
-
-              {rows.map((row, idx) => (
-                <div key={idx} className={`grid grid-cols-1 ${row.length === 2 ? "sm:grid-cols-2" : ""} gap-3`}>
-                  {row.map((field) => (
-                    <FormField
-                      key={field.key}
-                      field={field}
-                      value={form[field.key] as string | number | undefined}
-                      onChange={(val) => handleChange(field.key, val)}
-                    />
-                  ))}
-                </div>
-              ))}
-
+            {/* ── Top bar ────────────────────────────────────── */}
+            <div className="shrink-0 flex items-center justify-between px-6 py-3.5 bg-pine text-white">
+              <span className="font-serif italic font-bold text-sm">
+                {person.firstName} {person.lastName} &mdash; Edit
+              </span>
               <button
-                type="submit"
-                className="w-full bg-[#3B291D] hover:bg-stone-800 text-white font-bold py-2.5 rounded-lg uppercase tracking-wider text-xs"
+                onClick={onClose}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Close"
               >
-                ✓ Өөрчлөлтийг баталгаажуулах
+                <X className="w-4 h-4" />
               </button>
-            </form>
+            </div>
+
+            {/* ── PersonForm ─────────────────────────────────── */}
+            <div className="flex-1 overflow-y-auto">
+              <PersonForm
+                mode="edit"
+                initialData={personToFormData(person)}
+                existingAvatarUrl={person.avatarUrl}
+                onCancel={onClose}
+                onSubmit={handleSubmit}
+                saveLabel=" хадгалах"
+              />
+            </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

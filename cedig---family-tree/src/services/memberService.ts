@@ -1,4 +1,4 @@
-import { api } from '@/src/lib/api';
+import { api, ApiRequestError } from '@/src/lib/api';
 import type { Person } from '@/src/types/person';
 
 export interface BackendPerson {
@@ -188,8 +188,23 @@ export async function createPerson(
     spouseId: person.spouseId || null,
     avatarUrl: person.avatarUrl || null,
   };
-  const data = await api.post<BackendPerson>('/people', payload);
-  return mapPerson(data);
+  try {
+    const data = await api.post<BackendPerson>('/people', payload);
+    return mapPerson(data);
+  } catch (err) {
+    if (err instanceof ApiRequestError) {
+      console.error(
+        `[createPerson] API error — status: ${err.status}, code: ${err.code}, message: ${err.message}`,
+      );
+      if (err.errors?.length) {
+        console.error(
+          '[createPerson] Field errors:',
+          JSON.stringify(err.errors, null, 2),
+        );
+      }
+    }
+    throw err;
+  }
 }
 
 export async function updatePerson(
@@ -226,6 +241,7 @@ export async function updatePerson(
   if (updates.fatherId !== undefined) payload.fatherId = updates.fatherId || null;
   if (updates.motherId !== undefined) payload.motherId = updates.motherId || null;
   if (updates.spouseId !== undefined) payload.spouseId = updates.spouseId || null;
+  if (updates.avatarUrl !== undefined) payload.avatarUrl = updates.avatarUrl || null;
 
   const data = await api.put<BackendPerson>(`/people/${personId}`, payload);
   return mapPerson(data);

@@ -85,14 +85,15 @@ export default function OTPForm({
     });
   }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const code = otp.join('');
     if (code.length !== 6) return;
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await Promise.resolve(onSubmit(code));
+    } finally {
       setLoading(false);
-      onSubmit(code);
-    }, 1200);
+    }
   };
 
   const handleResendAction = () => {

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
 import { motion } from "motion/react";
 import { X, Upload, Image as ImageIcon, FileText, Loader2 } from "lucide-react";

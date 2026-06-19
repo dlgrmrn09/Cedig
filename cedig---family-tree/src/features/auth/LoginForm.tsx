@@ -51,7 +51,6 @@ export default function LoginForm({
 }: LoginFormProps) {
   const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<
     "google" | "facebook" | null
   >(null);
@@ -67,28 +66,17 @@ export default function LoginForm({
   });
 
   const handleEmailSubmit = (data: EmailLoginData) => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onEmailLogin(data);
-    }, 1200);
+    onEmailLogin(data);
   };
 
   const handlePhoneSubmit = (data: PhoneLoginData) => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      onPhoneLogin(data);
-    }, 1200);
+    onPhoneLogin(data);
   };
 
   const handleSocialLogin = (provider: "google" | "facebook") => {
     setSocialLoading(provider);
-    setTimeout(() => {
-      setSocialLoading(null);
-      if (provider === "google") onGoogleLogin();
-      else onFacebookLogin();
-    }, 1000);
+    if (provider === "google") onGoogleLogin();
+    else onFacebookLogin();
   };
 
   const inputClasses =
@@ -271,12 +259,12 @@ export default function LoginForm({
           </div>
           <motion.button
             type="submit"
-            disabled={loading || isSubmitting}
+            disabled={isSubmitting}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:bg-pine/90 active:bg-pine/80 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading || isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Нэвтрэх
           </motion.button>
         </form>
@@ -357,12 +345,12 @@ export default function LoginForm({
           </div>
           <motion.button
             type="submit"
-            disabled={loading || isSubmitting}
+            disabled={isSubmitting}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full bg-pine text-white py-3.5 rounded-xl font-semibold text-sm shadow-lg shadow-pine/10 hover:bg-pine/90 active:bg-pine/80 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading || isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Нэвтрэх
           </motion.button>
         </form>

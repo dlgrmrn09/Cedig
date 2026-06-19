@@ -2,7 +2,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Sidebar, WorkspaceHeader, OndoardingPlaceholder } from "@/src/features/workspace";
+import { Sidebar, WorkspaceHeader, OnboardingPlaceholder } from "@/src/features/workspace";
 import AddPersonModal from "@/src/components/AddPersonModal";
 import ToastToaster from "@/src/components/ToastToaster";
 import { TreePine } from "lucide-react";
@@ -105,7 +105,7 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
         <div className="flex-grow overflow-auto relative bg-[#f7f4ec]">
           {(!hasActiveTree && isTreePage) || showCreateTreeForm ? (
             <div className="p-4 sm:p-6 lg:p-8 relative z-10">
-              <OndoardingPlaceholder hasAnyTree={hasAnyTree} />
+              <OnboardingPlaceholder hasAnyTree={hasAnyTree} />
             </div>
           ) : hasActiveTree ? (
             <>

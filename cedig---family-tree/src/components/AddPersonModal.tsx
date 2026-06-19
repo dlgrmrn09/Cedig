@@ -1,150 +1,16 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useAppStore, Person } from "@/lib/store";
+import { motion, AnimatePresence } from "motion/react";
+import { X, FolderPlus } from "lucide-react";
 import SealStamp from "@/src/components/SealStamp";
-import { X, FolderPlus, Upload } from "lucide-react";
-import { PERSON_FIELDS } from "@/src/config/personFields";
-import type { PersonFieldConfig } from "@/src/config/personFields";
-import type { PersonFormData } from "@/src/types/personFormData";
-import { api } from "@/src/lib/api";
-import VoiceHoldButton from "@/src/components/VoiceHoldButton";
-import Image from "next/image";
-const FORM_FIELDS = PERSON_FIELDS.filter((f) => f.key !== "awards");
-
-const initialForm: PersonFormData = {
-  firstName: "",
-  lastName: "",
-  surname: "",
-  clanName: "",
-  birthPlace: "",
-  residence: "",
-  citizenship: "",
-  phone: "",
-  email: "",
-  title: "",
-  employment: "",
-  birthYear: 19801,
-  birthDate: "",
-  deathDate: "",
-  gender: "male",
-  zodiacSign: "",
-  occupation: "",
-  education: "",
-  biography: "",
-  notes: "",
-  awards: [],
-};
-
-function FormField({
-  field,
-  value,
-  onChange,
-}: {
-  field: PersonFieldConfig;
-  value: string | number | undefined;
-  onChange: (val: string | number | undefined) => void;
-}) {
-  const baseClass =
-    "w-full bg-white border border-ink/15 rounded-xl p-3 text-sm focus:outline-none focus:border-bronze";
-
-  if (field.type === "textarea") {
-    return (
-      <div className="space-y-1">
-        <label className="text-stone-400 font-bold uppercase tracking-wider block text-xs">
-          {field.label}{" "}
-          {field.required && <span className="text-rose-500">*</span>}
-        </label>
-        <textarea
-          placeholder={field.placeholder}
-          value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-          className={`${baseClass} h-24 resize-none`}
-        />
-        {field.key === "biography" && (
-          <div className="flex justify-end">
-            <VoiceHoldButton
-              onTranscript={(text) => {
-                const current = typeof value === "string" ? value : "";
-                onChange(current + (current ? " " : "") + text);
-              }}
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (field.key === "gender") {
-    return (
-      <div className="space-y-1">
-        <label className="text-stone-400 font-bold uppercase tracking-wider block text-xs">
-          Хүйс
-        </label>
-        <div className="flex bg-stone-100 p-1 rounded-xl border border-stone-200 gap-1">
-          <button
-            type="button"
-            onClick={() => onChange("male")}
-            className={`flex-grow text-center py-2 rounded-lg font-bold text-sm ${value === "male" ? "bg-pine text-white" : "text-ink/70"}`}
-          >
-            Эрэгтэй
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange("female")}
-            className={`flex-grow text-center py-2 rounded-lg font-bold text-sm ${value === "female" ? "bg-pine text-white" : "text-ink/70"}`}
-          >
-            Эмэгтэй
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-1">
-      <label className="text-stone-400 font-bold uppercase tracking-wider block text-xs">
-        {field.label}{" "}
-        {field.required && <span className="text-rose-500">*</span>}
-      </label>
-      <input
-        type={field.type === "number" ? "number" : "text"}
-        required={field.required}
-        placeholder={field.placeholder}
-        min={field.type === "number" ? 1800 : undefined}
-        max={field.type === "number" ? 2100 : undefined}
-        value={value ?? ""}
-        onChange={(e) => {
-          if (field.type === "number") {
-            onChange(parseInt(e.target.value) || 0);
-          } else {
-            onChange(e.target.value);
-          }
-        }}
-        className={baseClass}
-      />
-    </div>
-  );
-}
-
-function fieldRows(fields: PersonFieldConfig[]): PersonFieldConfig[][] {
-  const rows: PersonFieldConfig[][] = [];
-  let i = 0;
-  while (i < fields.length) {
-    const field = fields[i];
-    if (field.type === "textarea") {
-      rows.push([field]);
-      i++;
-    } else if (i + 1 < fields.length && fields[i + 1].type !== "textarea") {
-      rows.push([fields[i], fields[i + 1]]);
-      i += 2;
-    } else {
-      rows.push([fields[i]]);
-      i++;
-    }
-  }
-  return rows;
-}
+import PersonForm, {
+  INITIAL_FORM_DATA,
+  type PersonFormData,
+  type AvatarState,
+} from "@/src/components/PersonForm";
+import { ApiRequestError } from "@/src/lib/api";
 
 export default function AddPersonModal() {
   const {
@@ -157,25 +23,7 @@ export default function AddPersonModal() {
     addNotification,
   } = useAppStore();
 
-  const [form, setForm] = useState<PersonFormData>(() => ({
-    ...initialForm,
-    gender: (() => {
-      if (addingRelationType === "father") return "male";
-      if (addingRelationType === "mother") return "female";
-      const anchorPerson = people.find((p) => p.id === addingRelationToId);
-      if (addingRelationType === "spouse" && anchorPerson) {
-        return anchorPerson.gender === "male" ? "female" : "male";
-      }
-      return "male";
-    })(),
-  }));
-
   const [showSeal, setShowSeal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const anchorPerson = addingRelationToId
     ? people.find((p) => p.id === addingRelationToId)
@@ -184,24 +32,54 @@ export default function AddPersonModal() {
 
   if (!addingRelationType) return null;
 
-  const handleChange = (
-    key: keyof PersonFormData,
-    val: string | number | undefined,
+  // ── Resolve default gender ─────────────────────────────────────────
+  const defaultGender = (() => {
+    if (addingRelationType === "father") return "male";
+    if (addingRelationType === "mother") return "female";
+    const a = people.find((p) => p.id === addingRelationToId);
+    if (addingRelationType === "spouse" && a) {
+      return a.gender === "male" ? "female" : "male";
+    }
+    return "male";
+  })();
+
+  // ── Relation context line ──────────────────────────────────────────
+  const relationLabel = anchorPerson
+    ? `${anchorPerson.firstName} -ийн ${
+        addingRelationType === "father"
+          ? "Эцэг"
+          : addingRelationType === "mother"
+            ? "Эх"
+            : addingRelationType === "spouse"
+              ? "Хань"
+              : addingRelationType === "sibling"
+                ? "Ах/Дүү"
+                : "Хүүхэд"
+      }`
+    : "Овгийн Сүлжээ";
+
+  // ── Handle submit ──────────────────────────────────────────────────
+  const handleSubmit = async (
+    formData: PersonFormData,
+    avatar: AvatarState,
   ) => {
-    setForm((prev) => ({ ...prev, [key]: val }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-
-    if (!form.firstName.trim() || !form.lastName.trim()) {
+    // Validate required fields
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
       addNotification(
         "warn",
         "Мэдээлэл дутуу",
         "Гишүүний Овог болон Нэрийг заавал бөглөнө үү.",
       );
-      return;
+      throw new Error("validation");
+    }
+
+    if (formData.birthYear < 1800 || formData.birthYear > 2100) {
+      addNotification(
+        "warn",
+        "Төрсөн он буруу",
+        "Төрсөн он 1800 - 2100 хооронд байх ёстой.",
+      );
+      throw new Error("validation");
     }
 
     if (addingRelationType === "spouse" && anchorPerson?.spouseId) {
@@ -210,14 +88,15 @@ export default function AddPersonModal() {
         "Зөрчил үүслээ",
         "Сонгосон гишүүн хэдийн бүртгэгдсэн ханьтай байна.",
       );
-      return;
+      throw new Error("validation");
     }
 
     if (!familyTreeId) {
       addNotification("warn", "Алдаа", "Ургийн модны ID олдсонгүй.");
-      return;
+      throw new Error("validation");
     }
 
+    // ── Resolve role ──────────────────────────────────────────────────
     let role: Person["relationshipLabel"] = "DESCENDANT";
     if (addingRelationType === "root") {
       role = "HEAD OF CLAN";
@@ -230,266 +109,161 @@ export default function AddPersonModal() {
       role = "SPOUSE";
     }
 
-    let resolvedFatherId: string | undefined;
-    let resolvedMotherId: string | undefined;
-    let resolvedSpouseId: string | undefined;
+    // ── Resolve parent IDs ────────────────────────────────────────────
+    let fatherId: string | undefined;
+    let motherId: string | undefined;
+    let spouseId: string | undefined;
 
     if (addingRelationType === "father") {
-      resolvedFatherId = undefined;
-      resolvedMotherId = undefined;
-      resolvedSpouseId = anchorPerson?.motherId;
+      spouseId = anchorPerson?.motherId;
     } else if (addingRelationType === "mother") {
-      resolvedFatherId = undefined;
-      resolvedMotherId = undefined;
-      resolvedSpouseId = anchorPerson?.fatherId;
+      spouseId = anchorPerson?.fatherId;
     } else if (addingRelationType === "spouse") {
-      resolvedFatherId = undefined;
-      resolvedMotherId = undefined;
-      resolvedSpouseId = addingRelationToId ?? undefined;
+      spouseId = addingRelationToId ?? undefined;
     } else if (addingRelationType === "sibling") {
-      resolvedFatherId = anchorPerson?.fatherId;
-      resolvedMotherId = anchorPerson?.motherId;
-      resolvedSpouseId = undefined;
+      fatherId = anchorPerson?.fatherId;
+      motherId = anchorPerson?.motherId;
     } else if (addingRelationType === "child" && anchorPerson) {
       if (anchorPerson.gender === "male") {
-        resolvedFatherId = anchorPerson.id;
-        resolvedMotherId = anchorPerson.spouseId;
+        fatherId = anchorPerson.id;
+        motherId = anchorPerson.spouseId;
       } else {
-        resolvedFatherId = anchorPerson.spouseId;
-        resolvedMotherId = anchorPerson.id;
+        fatherId = anchorPerson.spouseId;
+        motherId = anchorPerson.id;
       }
-      resolvedSpouseId = undefined;
     }
 
-    const newPersonDraft: Omit<
-      Person,
-      "id" | "verified" | "pendingOralHistory"
-    > = {
-      firstName: form.firstName,
-      lastName: form.lastName,
-      surname: form.surname || undefined,
-      clanName: form.clanName,
-      birthPlace: form.birthPlace,
-      residence: form.residence || undefined,
-      citizenship: form.citizenship || undefined,
-      phone: form.phone || undefined,
-      email: form.email || undefined,
-      title: form.title || undefined,
-      employment: form.employment || undefined,
-      birthYear: form.birthYear,
-      gender: form.gender,
+    // ── Resolve avatar URL ────────────────────────────────────────────
+    let avatarUrl: string | undefined;
+    const avatarUrlFromForm = (formData as unknown as Record<string, unknown>)
+      .avatarUrl as string | null | undefined;
+    if (avatarUrlFromForm) {
+      avatarUrl = avatarUrlFromForm;
+    } else if (avatar.action === "remove") {
+      avatarUrl = undefined;
+    }
+
+    // ── Build person draft ────────────────────────────────────────────
+    const draft: Omit<Person, "id" | "verified" | "pendingOralHistory"> = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      surname: formData.surname || undefined,
+      clanName: formData.clanName,
+      birthPlace: formData.birthPlace,
+      residence: formData.residence || undefined,
+      citizenship: formData.citizenship || undefined,
+      phone: formData.phone || undefined,
+      email: formData.email || undefined,
+      title: formData.title || undefined,
+      employment: formData.employment || undefined,
+      birthYear: formData.birthYear,
+      gender: formData.gender,
       biography:
-        form.biography ||
-        `${form.clanName} овгийн ${form.firstName} нь ${form.birthPlace} нутагт төрсөн.`,
-      occupation: form.occupation || undefined,
-      education: form.education || undefined,
-      notes: form.notes || undefined,
-      zodiacSign: form.zodiacSign || undefined,
-      deathDate: form.deathDate || undefined,
-      customFields: form.customFields || undefined,
+        formData.biography ||
+        `${formData.clanName} овгийн ${formData.firstName} нь ${formData.birthPlace} нутагт төрсөн.`,
+      occupation: formData.occupation || undefined,
+      education: formData.education || undefined,
+      notes: formData.notes || undefined,
+      zodiacSign: formData.zodiacSign || undefined,
+      deathDate: formData.deathDate || undefined,
+      customFields: formData.customFields || undefined,
       relationshipLabel: role,
-      fatherId: resolvedFatherId,
-      motherId: resolvedMotherId,
-      spouseId: resolvedSpouseId,
+      fatherId,
+      motherId,
+      spouseId,
     };
 
     try {
-      setSubmitting(true);
-
-      let avatarUrl: string | undefined;
-
-      if (avatarFile) {
-        setUploadingAvatar(true);
-        try {
-          const formData = new FormData();
-          formData.append("file", avatarFile);
-          formData.append("folder", "avatars");
-
-          const uploadResult = await api.upload<{ url: string; key: string }>(
-            "/uploads/file",
-            formData,
-          );
-          avatarUrl = uploadResult.url;
-          
-        } catch (uploadErr) {
-          console.error("[UPLOAD] Avatar upload failed:", uploadErr);
-          addNotification(
-            "warn",
-            "Зураг оруулах алдаа",
-            "Зургийг байршуулж чадсангүй, үргэлжлүүлж байна.",
-          );
-        } finally {
-          setUploadingAvatar(false);
-        }
-      }
-
-      await addPersonAsync(familyTreeId, { ...newPersonDraft, avatarUrl });
+      await addPersonAsync(familyTreeId, { ...draft, avatarUrl });
 
       addNotification(
         "success",
         "Шинэ гишүүн нэмэгдлээ",
-        `${form.firstName} ${form.lastName} амжилттай нэмэгдлээ.`,
+        `${formData.firstName} ${formData.lastName} амжилттай нэмэгдлээ.`,
       );
+
+      // Show seal animation then close
+      setShowSeal(true);
+      setTimeout(() => {
+        setAddingRelation(null, null);
+        setShowSeal(false);
+      }, 900);
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Гишүүн нэмэхэд алдаа гарлаа";
-      addNotification("warn", "Алдаа", msg);
-      return;
-    } finally {
-      setSubmitting(false);
+      if (err instanceof ApiRequestError) {
+        if (err.errors?.length) {
+          const msgs = err.errors
+            .map((e) => `${e.field}: ${e.message}`)
+            .join(", ");
+          addNotification("warn", "Баталгаажуулалт амжилтгүй", msgs);
+        } else {
+          addNotification("warn", "Алдаа", err.message);
+        }
+      } else {
+        const msg =
+          err instanceof Error ? err.message : "Гишүүн нэмэхэд алдаа гарлаа";
+        addNotification("warn", "Алдаа", msg);
+      }
+      throw err;
     }
-
-    setShowSeal(true);
-    setForm({ ...initialForm });
-    setAvatarFile(null);
-    setAvatarPreview(null);
-
-    setTimeout(() => {
-      setAddingRelation(null, null);
-      setShowSeal(false);
-    }, 900);
   };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      addNotification("warn", "Алдаа", "Зөвхөн зураг файл оруулна уу.");
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      addNotification("warn", "Алдаа", "Зураг 2MB-аас хэтрэхгүй байх ёстой.");
-      return;
-    }
-
-    setAvatarFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setAvatarPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const rows = fieldRows(FORM_FIELDS);
 
   return (
-    <div className="fixed inset-0 bg-pine/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-[#FAF6EE] rounded-3xl border border-bronze/30 shadow-2xl relative overflow-hidden flex flex-col justify-between max-h-[90vh]">
-        <div className="bg-pine text-vellum px-6 py-4 flex items-center justify-between border-b-[4px] border-bronze">
-          <div className="flex items-center gap-2">
-            <FolderPlus className="w-5 h-5 text-bronze" />
-            <span className="font-display font-bold text-base uppercase tracking-wider">
-              {isRootMode ? "Гишүүн нэмэх" : "Add New Person"}
-            </span>
-          </div>
-          <button
-            onClick={() => setAddingRelation(null, null)}
-            className="p-1 rounded-full hover:bg-white/10 text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {isRootMode ? (
-          <div className="bg-bronze/10 px-6 py-3 border-b border-bronze/20 text-xs font-semibold text-ink text-center"></div>
-        ) : (
-          <div className="bg-bronze/10 px-6 py-3 border-b border-bronze/20 text-xs font-semibold text-ink flex justify-between">
-            <span>Холбоос тавих гишүүн:</span>
-            <span className="text-bronze uppercase font-bold">
-              {anchorPerson
-                ? `${anchorPerson.firstName} -ийн ${addingRelationType === "father" ? "Эцэг" : addingRelationType === "mother" ? "Эх" : addingRelationType === "spouse" ? "Хань" : addingRelationType === "sibling" ? "Ах/Дүү" : "Хүүхэд"}`
-                : "Овгийн Сүлжээ"}
-            </span>
-          </div>
-        )}
-
-        <form
-          onSubmit={handleSubmit}
-          className="p-6 overflow-y-auto space-y-4 text-xs font-medium"
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      >
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0, y: 8 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.96, opacity: 0, y: 8 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-stone-200/80 overflow-hidden flex flex-col scroll-bar-thin scrollbar-thumb-rounded scrollbar-thumb-stone-300"
         >
-          {rows.map((row, idx) => (
-            <div
-              key={idx}
-              className={`grid grid-cols-1 ${row.length === 2 ? "sm:grid-cols-2" : ""} gap-3 sm:gap-4`}
-            >
-              {row.map((field) => (
-                <FormField
-                  key={field.key}
-                  field={field}
-                  value={form[field.key] as string | number | undefined}
-                  onChange={(val) => handleChange(field.key, val)}
-                />
-              ))}
+          {/* ── Top bar ────────────────────────────────────────── */}
+          <div className="shrink-0 flex items-center justify-between px-6 py-3.5 bg-pine text-white">
+            <div className="flex items-center gap-2.5">
+              <FolderPlus className="w-5 h-5 text-bronze/80" />
+              <span className="font-semibold text-sm">
+                {isRootMode ? "Гишүүн нэмэх" : "Шинэ гишүүн нэмэх"}
+              </span>
             </div>
-          ))}
-
-          <div className="space-y-2 border-t border-ink/10 pt-4">
-            <label className="text-stone-400 font-bold uppercase tracking-wider block text-xs">
-              Зураг (заавал биш)
-            </label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            {avatarPreview ? (
-              <div className="flex items-center gap-3">
-                <Image
-                  src={avatarPreview}
-                  alt="Preview"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-bronze/30"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAvatarFile(null);
-                    setAvatarPreview(null);
-                  }}
-                  className="text-xs text-red-500 hover:underline"
-                >
-                  Устгах
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-ink/15 rounded-xl text-xs text-ink/50 hover:border-bronze hover:text-bronze transition-colors cursor-pointer"
-              >
-                <Upload className="w-4 h-4" />
-                Зураг сонгох (max 2MB)
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
             <button
-              type="button"
               onClick={() => setAddingRelation(null, null)}
-              className="w-full sm:w-1/2 border-2 border-ink/15 text-ink/60 py-3.5 rounded-xl font-bold hover:bg-pine/5 text-center uppercase tracking-wider text-xs"
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="Close"
             >
-              Clear All
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full sm:w-1/2 bg-pine text-white py-3.5 rounded-xl font-bold hover:opacity-95 text-center uppercase tracking-wider text-xs shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isRootMode
-                ? "Гишүүн нэмэх"
-                : submitting
-                  ? uploadingAvatar
-                    ? "Зураг байршуулж байна..."
-                    : "Хадгалж байна..."
-                  : "Add Person"}
+              <X className="w-4 h-4" />
             </button>
           </div>
-        </form>
-      </div>
 
-      <SealStamp show={showSeal} onComplete={() => setShowSeal(false)} />
-    </div>
+          {/* ── Relation context ────────────────────────────────── */}
+          {!isRootMode && (
+            <div className="shrink-0 px-6 py-2.5 bg-bronze/5 border-b border-bronze/10 text-xs text-stone-600 flex items-center justify-between">
+              <span className="font-medium">Холбоос тавих гишүүн:</span>
+              <span className="text-bronze font-bold uppercase text-xs tracking-wide">
+                {relationLabel}
+              </span>
+            </div>
+          )}
+
+          {/* ── PersonForm ──────────────────────────────────────── */}
+          <div className="flex-1 overflow-y-auto">
+            <PersonForm
+              mode="add"
+              initialData={{ ...INITIAL_FORM_DATA, gender: defaultGender }}
+              onCancel={() => setAddingRelation(null, null)}
+              onSubmit={handleSubmit}
+              saveLabel="Гишүүн нэмэх"
+            />
+          </div>
+        </motion.div>
+
+        <SealStamp show={showSeal} onComplete={() => setShowSeal(false)} />
+      </motion.div>
+    </AnimatePresence>
   );
 }

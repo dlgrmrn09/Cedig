@@ -13,7 +13,7 @@ import {
   TreePine,
 } from "lucide-react";
 
-export default function OndoardingPlaceholder({ hasAnyTree }: { hasAnyTree: boolean }) {
+export default function OnboardingPlaceholder({ hasAnyTree }: { hasAnyTree: boolean }) {
   const router = useRouter();
   const {
     joinTreeAsync,

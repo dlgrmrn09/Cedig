@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
@@ -15,7 +16,15 @@ import type { ViewType } from '@/src/types/common';
 
 export function AuthScreenContent({ initialViewMode }: { initialViewMode?: ViewType }) {
   const { currentView } = useAppStore((state) => state);
-  const viewToShow = initialViewMode ?? currentView;
+
+  // Seed the store view on mount, then use store-driven view thereafter
+  React.useEffect(() => {
+    if (initialViewMode) {
+      useAppStore.setState({ currentView: initialViewMode });
+    }
+  }, [initialViewMode]);
+
+  const viewToShow = currentView;
 
   const pageVariants = {
     initial: { opacity: 0, y: 20 },

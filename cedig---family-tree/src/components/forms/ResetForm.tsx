@@ -55,12 +55,13 @@ export default function ResetForm({ onSubmit, onBack }: ResetFormProps) {
   const strengthText = strengthCount <= 1 ? 'Сул' : strengthCount <= 2 ? 'Дунд зэрэг' : strengthCount <= 3 ? 'Сайн' : strengthCount <= 4 ? 'Хүчтэй' : 'Маш хүчтэй';
   const strengthTextColor = strengthCount <= 1 ? 'text-red-500' : strengthCount <= 2 ? 'text-orange-500' : strengthCount <= 3 ? 'text-yellow-600' : strengthCount <= 4 ? 'text-lime-600' : 'text-green-600';
 
-  const handleFormSubmit = (data: ResetData) => {
+  const handleFormSubmit = async (data: ResetData) => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await Promise.resolve(onSubmit(data.password));
+    } finally {
       setLoading(false);
-      onSubmit(data.password);
-    }, 1200);
+    }
   };
 
   const inputClasses = "w-full bg-white border border-stone-200 rounded-xl px-4 py-3.5 text-sm text-ink placeholder:text-stone-400 focus:outline-none focus:border-bronze focus:ring-2 focus:ring-bronze/15 transition-all";
